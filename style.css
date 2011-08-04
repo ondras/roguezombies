@@ -1,0 +1,17 @@
+@font-face {
+	font-family: "Inconsolata";
+	font-style: normal;
+	font-weight: normal;
+	src: local("Inconsolata"), url("ttf/Inconsolata.ttf") format("truetype");
+}
+
+body {
+	margin: 0px;
+	background-color: black;
+	font-family: Inconsolata;
+}
+
+canvas {
+	display: block;
+	margin: auto;
+}

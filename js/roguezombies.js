@@ -19,6 +19,7 @@ Array.prototype.random = function() {
 RZ.prototype.init = function() {
 	RZ.rz = this;
 	this._size = [80, 25];
+	this._char = [0, 0];
 	this._grass = new RZ.Grass();
 	this._zombies = [];
 	this._beings = {};
@@ -26,12 +27,6 @@ RZ.prototype.init = function() {
 	
 	this._initCanvas();
 	this._initItems();
-
-	for (var i=0;i<this._size[0];i++) {
-		for (var j=0;j<this._size[1];j++) {
-			this.draw(i, j);
-		}
-	}	
 
 	this._zombiePotential = 20;
 	this._rounds = 0;
@@ -195,21 +190,57 @@ RZ.prototype.draw = function(x, y) {
 }
 
 RZ.prototype._initCanvas = function() {
-	var size = 16;
-
-	var ch = OZ.DOM.elm("span", {innerHTML:"x", fontFamily:"monospace", fontSize:size+"px"});
-	document.body.appendChild(ch);
-	this._char = [ch.offsetWidth, ch.offsetHeight];
-	ch.parentNode.removeChild(ch);
-	
 	var c = OZ.DOM.elm("canvas");
 	document.body.appendChild(c);
-	c.width = this._size[0]*this._char[0];
-	c.height = this._size[1]*this._char[1];
-	
 	this._canvas = c.getContext("2d");
-	this._canvas.font = size + "px monospace";
+	this._resize();
+	
+	OZ.Event.add(window, "resize", this._resize.bind(this));
+}
+
+RZ.prototype._getCharSize = function(avail) {
+	var span = OZ.DOM.elm("span", {innerHTML:"x"});
+	document.body.appendChild(span);
+	
+	var size = 1;
+	while (1) {
+		span.style.fontSize = size + "px";
+		var charWidth = span.offsetWidth;
+		var charHeight = span.offsetHeight;
+		var width = charWidth * this._size[0];
+		var height = charHeight * this._size[1];
+		
+		if (width > avail[0] || height > avail[1]) {
+			span.style.fontSize = (size-1) + "px";
+			var result = [size-1, span.offsetWidth, span.offsetHeight];
+			span.parentNode.removeChild(span);
+			return result;
+		}
+		
+		size++;
+	}
+}
+
+RZ.prototype._resize = function(e) {
+	var charSize = this._getCharSize(OZ.DOM.win());
+
+	var size = charSize[0];
+	this._char[0] = charSize[1];
+	this._char[1] = charSize[2];
+	
+	/* adjust canvas size */
+	var w = this._size[0] * this._char[0];
+	var h = this._size[1] * this._char[1];
+	this._canvas.canvas.width = w;
+	this._canvas.canvas.height = h;
+	this._canvas.font = size + "px Inconsolata";
 	this._canvas.textBaseline = "bottom";
+
+	for (var i=0;i<this._size[0];i++) {
+		for (var j=0;j<this._size[1];j++) {
+			this.draw(i, j);
+		}
+	}	
 }
 
 RZ.prototype._initItems = function() {
@@ -306,7 +337,7 @@ RZ.Player.prototype.init = function() {
 RZ.Player.prototype._updateVisual = function() {
 	var colors = ["white", "red", "orange", "white"];
 	this.visual.fg = colors[this.hp];
-	if (!this.hp) { this.visual.ch = "✝"; }
+	if (!this.hp) { this.visual.ch = "+"; }
 }
 
 RZ.Player.prototype.distance = function(x, y) {
