@@ -6,7 +6,7 @@ RZ.Object.prototype.init = function() {
 	this.x = 0;
 	this.y = 0;
 	this.hp = 1;
-	this.blocks = 2; /* 0 nothing, 1 destructible, 2 blocking */
+	this.blocks = 2; /* zombie pathfinding support: 0 passable, 1 destructible, 2 blocking */
 	this.visual = {fg:"white",ch:"?"};
 }
 
@@ -36,7 +36,7 @@ RZ.Grass.prototype.init = function() {
 	this.visual = {ch:".", fg:"gray"};
 	this.blocks = 0;
 }
-RZ.Grass.prototype.damage = function(who) {}; /* not destroyable */
+RZ.Grass.prototype.damage = function(who) {}; /* undestructible */
 
 /**
  * Player character
@@ -176,4 +176,25 @@ RZ.Barricade.prototype.init = function() {
 RZ.Barricade.prototype._updateVisual = function() {
 	var colors = ["", "#300", "#520", "#850", "#a70", "#c90"];
 	this.visual.fg = colors[this.hp];
+}
+
+/**
+ * House - undestructible decoration
+ */
+RZ.House = OZ.Class().extend(RZ.Item);
+RZ.House.prototype.init = function(ch) {
+	RZ.Item.prototype.init.call(this);
+	this.visual = {ch:ch,fg:"#930"};
+}
+RZ.House.prototype.damage = function(who) {} /* undestructible */
+
+/**
+ * Window - destructible decoration
+ */
+RZ.Window = OZ.Class().extend(RZ.Item);
+RZ.Window.prototype.init = function(horiz) {
+	RZ.Item.prototype.init.call(this);
+	this.visual = {ch:horiz ? "═" : "║",fg:"#39f"};
+	this.blocks = 1;
+	this.hp = 2;
 }

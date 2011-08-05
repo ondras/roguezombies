@@ -31,7 +31,7 @@ RZ.prototype.init = function() {
 	this._zombiePotential = 20;
 	this._rounds = 0;
 	this.player = new RZ.Player();
-	this.addBeing(this.player, 10, 10);
+	this.addBeing(this.player, Math.round(this._size[0]/2), Math.round(this._size[1]/2));
 	
 	this._turnPlayer();
 }
@@ -245,4 +245,36 @@ RZ.prototype._initItems = function() {
 	this.addItem(new RZ.Barricade(), 2, 2);
 	this.addItem(new RZ.Barricade(), 1, 2);
 	this.addItem(new RZ.Barricade(), 2, 1);
+	
+	var house = [
+		"╔══h══h══hh══h══h══╗",
+		"║                  ╯",
+		"║                   ",
+		"v                  ╮",
+		"║                  ║",
+		"v                  v",
+		"║                  ║",
+		"v                  ╯",
+		"║                   ",
+		"║                  ╮",
+		"╚══h══h═╯  ╰═h══h══╝"
+	];
+	
+	var offset = [Math.round((this._size[0]-house[0].length)/2), Math.round((this._size[1]-house.length)/2)];
+	for (var j=0;j<house.length;j++) {
+		for (var i=0;i<house[j].length;i++) {
+			var ch = house[j].charAt(i);
+			if (ch == " ") { continue; }
+			
+			var item = null;
+			if (ch == "h" || ch =="v") { /* window */
+				item = new RZ.Window(ch == "h");
+			} else {
+				item = new RZ.House(ch);
+			}
+			
+			this.addItem(item, offset[0]+i, offset[1]+j);
+		}
+	}
+	
 }
