@@ -114,6 +114,7 @@ RZ.prototype._keyDown = function(e) {
 		case 97:
 			dir = 5;
 		break;
+		case 37:
 		case 100:
 			dir = 6;
 		break;
