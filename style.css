@@ -15,3 +15,8 @@ canvas {
 	display: block;
 	margin: auto;
 }
+
+#dialog {
+	position: absolute;
+	background-color: maroon;
+}

@@ -47,6 +47,7 @@ RZ.Player.prototype.init = function() {
 	this.visual = {ch:"@"};
 	this.blocks = 1;
 	this.hp = 3;
+	this.$ = 0;
 	this._updateVisual();
 }
 
@@ -59,8 +60,8 @@ RZ.Player.prototype._updateVisual = function() {
 RZ.Player.prototype.distance = function(x, y) {
 	var dx = x-this.x;
 	var dy = y-this.y;
-	return Math.abs(dx)+Math.abs(dy);
-//	return Math.max(Math.abs(dx), Math.abs(dy));
+//	return Math.abs(dx)+Math.abs(dy);
+	return Math.max(Math.abs(dx), Math.abs(dy));
 }
 
 RZ.Player.prototype._die = function() {
@@ -86,7 +87,7 @@ RZ.Zombie.prototype.act = function() {
 	var bestBlocks = -1;
 	var bestDist = Infinity;
 
-	for (var i=0;i<DIRS.length;i+=2) {
+	for (var i=0;i<DIRS.length;i+=1) {
 		var x = this.x + DIRS[i][0];
 		var y = this.y + DIRS[i][1];
 		var what = RZ.rz.at(x, y);
@@ -125,6 +126,7 @@ RZ.Zombie.prototype.act = function() {
 }
 
 RZ.Zombie.prototype._die = function() {
+	RZ.rz.player.$++;
 	RZ.rz.removeBeing(this);
 	var what = RZ.rz.at(this.x, this.y);
 	
@@ -145,6 +147,7 @@ RZ.Item.prototype.init = function() {
 	this.desc = "";
 }
 RZ.Item.prototype.use = function() {} /* using a bought item */
+RZ.Item.prototype.activate = function() {} /* someone stepped on an item */
 RZ.Item.prototype._die = function() {
 	RZ.rz.removeItem(this);
 }
@@ -157,25 +160,6 @@ RZ.Corpse.prototype.init = function(fg) {
 	RZ.Item.prototype.init.call(this);
 	this.visual = {ch:"%", fg:fg};
 	this.blocks = 0;
-}
-
-/**
- * Barricade - blocks movement
- */
-RZ.Barricade = OZ.Class().extend(RZ.Item);
-RZ.Barricade.prototype.init = function() {
-	RZ.Item.prototype.init.call(this);
-	this.hp = 5;
-	this.visual = {ch:"#"};
-	this._updateVisual();
-	this.blocks = 1;
-	this.amount = 3;
-	this.desc = "Wooden barricade; destroyed after "+this.hp+" hits";
-}
-
-RZ.Barricade.prototype._updateVisual = function() {
-	var colors = ["", "#300", "#520", "#850", "#a70", "#c90"];
-	this.visual.fg = colors[this.hp];
 }
 
 /**
@@ -197,4 +181,39 @@ RZ.Window.prototype.init = function(horiz) {
 	this.visual = {ch:horiz ? "═" : "║",fg:"#39f"};
 	this.blocks = 1;
 	this.hp = 2;
+}
+
+
+/**
+ * Barricade - blocks movement
+ */
+RZ.Barricade = OZ.Class().extend(RZ.Item);
+RZ.Barricade.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.hp = 5;
+	this.visual = {ch:"#"};
+	this._updateVisual();
+	this.blocks = 1;
+	this.amount = 3;
+	this.desc = "Wooden barricade; destroyed after "+this.hp+" hits";
+}
+
+RZ.Barricade.prototype._updateVisual = function() {
+	var colors = ["", "#300", "#520", "#850", "#a70", "#c90"];
+	this.visual.fg = colors[this.hp];
+}
+
+/**
+ * Rake - destroys one zombie
+ */
+RZ.Rake = OZ.Class().extend(RZ.Item);
+RZ.Rake.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.blocks = 0;
+	this.visual = {ch:"r", fg:"#999"};
+	this.amount = 3;
+	this.desc = "<strong>Rake:</strong> step on it and die";
+}
+RZ.Rake.prototype.activate = function(who) {
+	who.damage(this);
 }

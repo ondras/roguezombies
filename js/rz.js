@@ -28,7 +28,7 @@ RZ.prototype.init = function() {
 	this._initCanvas();
 	this._initItems();
 
-	this._zombiePotential = 20;
+	this._zombiePotential = 4;
 	this._rounds = 0;
 	this.player = new RZ.Player();
 	this.addBeing(this.player, Math.round(this._size[0]/2), Math.round(this._size[1]/2));
@@ -125,6 +125,12 @@ RZ.prototype._keyDown = function(e) {
 		case 109:
 			dir = -1;
 		break;
+		case 66: /* buy */
+		case 85: /* use */
+			OZ.Event.remove(this._event);
+			new RZ.Dialog([new RZ.Rake()]);
+			return;
+		break;
 	}
 	
 	if (dir === null) { return; }
@@ -144,6 +150,7 @@ RZ.prototype._keyDown = function(e) {
 RZ.prototype._turnZombies = function() {
 	OZ.Event.remove(this._event);
 	for (var i=0;i<this._zombies.length;i++) {
+		if (Math.random() > 0.5) { continue; }
 		var z = this._zombies[i];
 		z.act();
 	}
@@ -165,6 +172,9 @@ RZ.prototype.move = function(what, dir) {
 	id = what.x+"-"+what.y;
 	this._beings[id] = what;
 	this.draw(what.x, what.y);
+	
+	var item = this._items[id];
+	if (item) { item.activate(what); }
 }
 
 RZ.prototype.at = function(x, y) {
@@ -246,19 +256,20 @@ RZ.prototype._initItems = function() {
 	this.addItem(new RZ.Barricade(), 2, 2);
 	this.addItem(new RZ.Barricade(), 1, 2);
 	this.addItem(new RZ.Barricade(), 2, 1);
+	this.addItem(new RZ.Rake(), 1, 1);
 	
 	var house = [
 		"╔══h══h══hh══h══h══╗",
-		"║                  ╯",
+		"║                  ╵",
 		"║                   ",
-		"v                  ╮",
+		"v                  ╷",
 		"║                  ║",
 		"v                  v",
 		"║                  ║",
-		"v                  ╯",
+		"v                  ╵",
 		"║                   ",
-		"║                  ╮",
-		"╚══h══h═╯  ╰═h══h══╝"
+		"║                  ╷",
+		"╚══h══h═╴  ╶═h══h══╝"
 	];
 	
 	var offset = [Math.round((this._size[0]-house[0].length)/2), Math.round((this._size[1]-house.length)/2)];
@@ -277,5 +288,41 @@ RZ.prototype._initItems = function() {
 			this.addItem(item, offset[0]+i, offset[1]+j);
 		}
 	}
+}
+
+RZ.Dialog = OZ.Class();
+RZ.Dialog.prototype.init = function(itemlist) {
+	this._buttons = [];
+
+	var str = "<table><thead><tr><td></td><td>Item</td><td>Price</td></tr></thead><tbody></tbody></table>";
+	var div = OZ.DOM.elm("div", {innerHTML:str, id:"dialog"});
+	var tb = div.getElementsByTagName("tbody")[0];
 	
+	for (var i=0;i<itemlist.length;i++) {
+		var item = itemlist[i];
+		var tr = OZ.DOM.elm("tr");
+		
+		var td = OZ.DOM.elm("td");
+		var b = OZ.DOM.elm("input", {type:"button", value:String.fromCharCode(i+65)});
+		td.appendChild(b);
+		tr.appendChild(td);
+		
+		var td = OZ.DOM.elm("td", {innerHTML: item.desc});
+		tr.appendChild(td);
+		
+		var td = OZ.DOM.elm("td", {innerHTML: item.price + " for " + item.amount});
+		tr.appendChild(td);
+		
+		tb.appendChild(tr);
+	}
+
+	document.body.appendChild(div);
+	var win = OZ.DOM.win();
+	var w = div.offsetWidth;
+	var h = div.offsetHeight;
+	div.style.left = Math.round((win[0]-w)/2) + "px";
+	div.style.top = Math.round((win[1]-h)/2) + "px";
+}
+
+RZ.Dialog.prototype._keyDown = function(e) {
 }
