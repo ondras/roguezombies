@@ -142,7 +142,7 @@ RZ.Zombie.prototype._die = function() {
 RZ.Item = OZ.Class().extend(RZ.Object);
 RZ.Item.prototype.init = function() {
 	RZ.Object.prototype.init.call(this);
-	this.price = -1; /* can be bought? */
+	this.price = 0;
 	this.amount = 1; /* how many bought at once */
 	this.desc = "";
 }
@@ -211,6 +211,7 @@ RZ.Rake.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
 	this.blocks = 0;
 	this.visual = {ch:"r", fg:"#999"};
+	this.price = 1;
 	this.amount = 3;
 	this.desc = "<strong>Rake:</strong> step on it and die";
 }

@@ -18,6 +18,7 @@ Array.prototype.random = function() {
 
 RZ.prototype.init = function() {
 	RZ.rz = this;
+	this._lock = 0;
 	this._size = [80, 25];
 	this._char = [0, 0];
 	this._grass = new RZ.Grass();
@@ -33,7 +34,17 @@ RZ.prototype.init = function() {
 	this.player = new RZ.Player();
 	this.addBeing(this.player, Math.round(this._size[0]/2), Math.round(this._size[1]/2));
 	
-	this._turnPlayer();
+	this._playerLoop();
+}
+
+RZ.prototype.lock = function() {
+	this._lock++;
+}
+
+RZ.prototype.unlock = function() {
+	this._lock--;
+	if (!this._lock) { /* FIXME */
+	}
 }
 
 RZ.prototype.removeItem = function(item) {
@@ -86,10 +97,15 @@ RZ.prototype._turnPlayer = function() {
 		this._spawnZombies(amount);
 	}
 	
+	this._playerLoop();
+}
+
+RZ.prototype._playerLoop = function() {
 	this._event = OZ.Event.add(window, "keydown", this._keyDown.bind(this));
 }
 
 RZ.prototype._keyDown = function(e) {
+	OZ.Event.remove(this._event);
 	var code = e.keyCode;
 	var dir = null;
 	switch (code) {
@@ -126,14 +142,19 @@ RZ.prototype._keyDown = function(e) {
 			dir = -1;
 		break;
 		case 66: /* buy */
+			new RZ.Dialog([new RZ.Rake()], this._buyDone.bind(this));
+			return;
+		break;
 		case 85: /* use */
-			OZ.Event.remove(this._event);
-			new RZ.Dialog([new RZ.Rake()]);
+			new RZ.Dialog([new RZ.Rake()], this._useDone.bind(this));
 			return;
 		break;
 	}
 	
-	if (dir === null) { return; }
+	if (dir === null) { 
+		this._playerLoop();
+		return; 
+	}
 	
 	this._rounds++;
 
@@ -147,8 +168,19 @@ RZ.prototype._keyDown = function(e) {
 	this._turnZombies();
 }
 
+RZ.prototype._buyDone = function(item) {
+	alert("buy " + item);
+	this._playerLoop();
+	return !!item; /* leave dialog open only when an item was selected */
+}
+
+RZ.prototype._useDone = function(item) {
+	alert("use " + item);
+	this._playerLoop();
+	return false; /* always close dialog */
+}
+
 RZ.prototype._turnZombies = function() {
-	OZ.Event.remove(this._event);
 	for (var i=0;i<this._zombies.length;i++) {
 		if (Math.random() > 0.5) { continue; }
 		var z = this._zombies[i];
@@ -291,12 +323,14 @@ RZ.prototype._initItems = function() {
 }
 
 RZ.Dialog = OZ.Class();
-RZ.Dialog.prototype.init = function(itemlist) {
-	this._buttons = [];
+RZ.Dialog.prototype.init = function(itemlist, callback) {
+	this._ec = [];
+	this._itemlist = itemlist;
+	this._callback = callback;
 
 	var str = "<table><thead><tr><td></td><td>Item</td><td>Price</td></tr></thead><tbody></tbody></table>";
-	var div = OZ.DOM.elm("div", {innerHTML:str, id:"dialog"});
-	var tb = div.getElementsByTagName("tbody")[0];
+	this._div = OZ.DOM.elm("div", {innerHTML:str, id:"dialog"});
+	var tb = this._div.getElementsByTagName("tbody")[0];
 	
 	for (var i=0;i<itemlist.length;i++) {
 		var item = itemlist[i];
@@ -315,14 +349,48 @@ RZ.Dialog.prototype.init = function(itemlist) {
 		
 		tb.appendChild(tr);
 	}
+	
+	var tr = OZ.DOM.elm("tr");
+	var td = OZ.DOM.elm("td", {colSpan:3});
+	var b = OZ.DOM.elm("input", {type:"button", value:"Z (cancel)"});
+	OZ.DOM.append([tb, tr], [tr, td], [td, b]);
 
-	document.body.appendChild(div);
+	document.body.appendChild(this._div);
 	var win = OZ.DOM.win();
-	var w = div.offsetWidth;
-	var h = div.offsetHeight;
-	div.style.left = Math.round((win[0]-w)/2) + "px";
-	div.style.top = Math.round((win[1]-h)/2) + "px";
+	var w = this._div.offsetWidth;
+	var h = this._div.offsetHeight;
+	this._div.style.left = Math.round((win[0]-w)/2) + "px";
+	this._div.style.top = Math.round((win[1]-h)/2) + "px";
+	
+	this._ec.push(OZ.Event.add(document, "keydown", this._keyDown.bind(this)));
+	this._ec.push(OZ.Event.add(this._div, "click", this._click.bind(this)));
 }
 
 RZ.Dialog.prototype._keyDown = function(e) {
+	var kc = e.keyCode;
+	this._processCode(kc);
+}
+
+RZ.Dialog.prototype._click = function(e) {
+	var t = OZ.Event.target(e);
+	if (t.nodeName.toLowerCase() != "input") { return; }
+	var code = t.value.charCodeAt(0);
+}
+
+RZ.Dialog.prototype._processCode = function(code) {
+	if (code == "Z".charCodeAt(0)) {
+		var open = this._callback(null);
+		if (!open) { this._close(); }
+		return;
+	}
+	
+	var index = code - "A".charCodeAt(0);
+	if (index >= this._itemlist.length) { return; }
+	var open = this._callback(this._itemlist[index]);
+	if (!open) { this._close(); }
+}
+
+RZ.Dialog.prototype._close = function() {
+	while (this._ec.length) { OZ.Event.remove(this._ec.pop()); }
+	this._div.parentNode.removeChild(this._div);
 }

@@ -18,5 +18,14 @@ canvas {
 
 #dialog {
 	position: absolute;
-	background-color: maroon;
+	background-color: saddlebrown;
+	width: 50%;
+}
+
+#dialog table {
+	width: 100%;
+}
+
+#dialog table thead {
+	font-weight: bold;
 }
