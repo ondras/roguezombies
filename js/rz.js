@@ -25,9 +25,12 @@ RZ.prototype.init = function() {
 	this._zombies = [];
 	this._beings = {};
 	this._items = {};
+	this._pendingItem = null;
 	
 	this._initCanvas();
+	this._initStatus();
 	this._initItems();
+	this._resize();
 
 	this._zombiePotential = 4;
 	this._rounds = 0;
@@ -37,14 +40,17 @@ RZ.prototype.init = function() {
 	this._playerLoop();
 }
 
+RZ.prototype.status = function(text) {
+	this._status.innerHTML = text || "&nbsp;";
+}
+
 RZ.prototype.lock = function() {
 	this._lock++;
 }
 
 RZ.prototype.unlock = function() {
 	this._lock--;
-	if (!this._lock) { /* FIXME */
-	}
+	if (!this._lock) { this._playerLoop(); }
 }
 
 RZ.prototype.removeItem = function(item) {
@@ -89,6 +95,7 @@ RZ.prototype.addItem = function(item, x, y) {
 }
 
 RZ.prototype._turnPlayer = function() {
+	this._rounds++;
 	var amount = this._rounds / 20;
 	this._zombiePotential += amount;
 	if (this._zombiePotential >= 1) {
@@ -101,71 +108,80 @@ RZ.prototype._turnPlayer = function() {
 }
 
 RZ.prototype._playerLoop = function() {
+	if (this._lock) { return; }
+	this.status("Arrow keys to move around, B to buy items, U to use an item");
 	this._event = OZ.Event.add(window, "keydown", this._keyDown.bind(this));
 }
 
 RZ.prototype._keyDown = function(e) {
 	OZ.Event.remove(this._event);
 	var code = e.keyCode;
-	var dir = null;
-	switch (code) {
-		case 38: 
-		case 104:
-			dir = 0; 
-		break;
-		case 105:
-			dir = 1;
-		break;
-		case 39:
-		case 102:
-			dir = 2;
-		break;
-		case 99:
-			dir = 3;
-		break;
-		case 40: 
-		case 98: 
-			dir = 4;
-		break;
-		case 97:
-			dir = 5;
-		break;
-		case 37:
-		case 100:
-			dir = 6;
-		break;
-		case 103:
-			dir = 7;
-		break;
-		case 101:
-		case 109:
-			dir = -1;
-		break;
-		case 66: /* buy */
-			new RZ.Dialog([new RZ.Rake()], this._buyDone.bind(this));
-			return;
-		break;
-		case 85: /* use */
-			new RZ.Dialog([new RZ.Rake()], this._useDone.bind(this));
-			return;
-		break;
-	}
-	
-	if (dir === null) { 
-		this._playerLoop();
-		return; 
-	}
-	
-	this._rounds++;
+	var dir = this._keyCodeToDir(code);
 
+	if (dir === null) { /* no direction */
+		switch (code) {
+			case 66: /* buy */
+				this._buyDialog();
+			break;
+			case 85: /* use */
+				this._useDialog();
+			break;
+			default: /* nothing interesting */
+				this._playerLoop();
+			break;
+		}
+		return;
+	}
+	
 	if (dir > -1) {
 		var x = this.player.x + DIRS[dir][0];
 		var y = this.player.y + DIRS[dir][1];
-		if (this.at(x, y).blocks) { return; }
+		if (this.at(x, y).blocks) { 
+			this._playerLoop();
+			return; 
+		}
 		this.move(this.player, dir);
 	}
 
 	this._turnZombies();
+}
+
+RZ.prototype._dirKeyDown = function(e) {
+	var dir = this._keyCodeToDir(e.keyCode);
+	if (dir == -1 || dir === null) { return; }
+	OZ.Event.remove(this._event);
+	this._pendingItem.use(dir);
+	this._playerLoop();
+}
+
+RZ.prototype._keyCodeToDir = function(code) {
+	var def = {};
+	def[38] = 0;
+	def[104] = 0;
+	def[105] = 1;
+	def[39] = 2;
+	def[102] = 2;
+	def[99] = 3;
+	def[40] = 4;
+	def[98] = 4;
+	def[97] = 5;
+	def[37] = 6;
+	def[100] = 6;
+	def[103] = 7;
+	def[101] = -1;
+	def[109] = -1;
+	
+	return (code in def ? def[code] : null);
+}
+
+RZ.prototype._buyDialog = function() {
+	this.status("A-Y to buy, Z to exit");
+	new RZ.Dialog([new RZ.Item.Rake()], this._buyDone.bind(this));
+}
+
+RZ.prototype._useDialog = function() {
+	this.status("A-Y to use, Z to cancel");
+	new RZ.Dialog(RZ.rz.player.items, this._useDone.bind(this));
 }
 
 RZ.prototype._buyDone = function(item) {
@@ -175,8 +191,21 @@ RZ.prototype._buyDone = function(item) {
 }
 
 RZ.prototype._useDone = function(item) {
-	alert("use " + item);
-	this._playerLoop();
+	if (!item) { /* no item was picked */
+		this._playerLoop();
+		return;
+	}
+	
+	if (!item.requiresDirection) {
+		item.use();
+		this._playerLoop();
+		return; /* FIXME what next? */
+	}
+	
+	this._pendingItem = item;
+	RZ.rz.status("Use " + item.name + ": arrow keys to pick direction");
+	this._event = OZ.Event.add(window, "keydown", this._dirKeyDown.bind(this));
+
 	return false; /* always close dialog */
 }
 
@@ -230,17 +259,21 @@ RZ.prototype.draw = function(x, y) {
 	this._canvas.fillText(vis.ch, left+0*1, top + this._char[1] + 0*1);	
 }
 
+RZ.prototype._initStatus = function() {
+	this._status = OZ.DOM.elm("pre", {id:"status"});
+	document.body.appendChild(this._status);
+	this.status();
+}
+
 RZ.prototype._initCanvas = function() {
 	var c = OZ.DOM.elm("canvas");
 	document.body.appendChild(c);
 	this._canvas = c.getContext("2d");
-	this._resize();
-	
 	OZ.Event.add(window, "resize", this._resize.bind(this));
 }
 
 RZ.prototype._getCharSize = function(avail) {
-	var span = OZ.DOM.elm("span", {innerHTML:"x"});
+	var span = OZ.DOM.elm("span", {position:"absolute",innerHTML:"x"});
 	document.body.appendChild(span);
 	
 	var size = 1;
@@ -263,7 +296,9 @@ RZ.prototype._getCharSize = function(avail) {
 }
 
 RZ.prototype._resize = function(e) {
-	var charSize = this._getCharSize(OZ.DOM.win());
+	var win = OZ.DOM.win();
+	win[1] -= this._status.offsetHeight;
+	var charSize = this._getCharSize(win);
 
 	var size = charSize[0];
 	this._char[0] = charSize[1];
@@ -285,10 +320,10 @@ RZ.prototype._resize = function(e) {
 }
 
 RZ.prototype._initItems = function() {
-	this.addItem(new RZ.Barricade(), 2, 2);
-	this.addItem(new RZ.Barricade(), 1, 2);
-	this.addItem(new RZ.Barricade(), 2, 1);
-	this.addItem(new RZ.Rake(), 1, 1);
+	this.addItem(new RZ.Item.Barricade(), 2, 2);
+	this.addItem(new RZ.Item.Barricade(), 1, 2);
+	this.addItem(new RZ.Item.Barricade(), 2, 1);
+	this.addItem(new RZ.Item.Rake(), 1, 1);
 	
 	var house = [
 		"╔══h══h══hh══h══h══╗",
@@ -312,9 +347,9 @@ RZ.prototype._initItems = function() {
 			
 			var item = null;
 			if (ch == "h" || ch =="v") { /* window */
-				item = new RZ.Window(ch == "h");
+				item = new RZ.Item.Window(ch == "h");
 			} else {
-				item = new RZ.House(ch);
+				item = new RZ.Item.House(ch);
 			}
 			
 			this.addItem(item, offset[0]+i, offset[1]+j);
@@ -341,7 +376,7 @@ RZ.Dialog.prototype.init = function(itemlist, callback) {
 		td.appendChild(b);
 		tr.appendChild(td);
 		
-		var td = OZ.DOM.elm("td", {innerHTML: item.desc});
+		var td = OZ.DOM.elm("td", {innerHTML: "<strong>"+item.name+"</strong>:"+item.desc});
 		tr.appendChild(td);
 		
 		var td = OZ.DOM.elm("td", {innerHTML: item.price + " for " + item.amount});

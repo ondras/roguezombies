@@ -48,6 +48,7 @@ RZ.Player.prototype.init = function() {
 	this.blocks = 1;
 	this.hp = 3;
 	this.$ = 0;
+	this.items = [new RZ.Item.Crowbar()];
 	this._updateVisual();
 }
 
@@ -131,7 +132,7 @@ RZ.Zombie.prototype._die = function() {
 	var what = RZ.rz.at(this.x, this.y);
 	
 	if (!what.blocks) { /* free to create a corpse */
-		var corpse = new RZ.Corpse(this.visual.fg);
+		var corpse = new RZ.Item.Corpse(this.visual.fg);
 		RZ.rz.addItem(corpse, this.x, this.y);
 	}
 }
@@ -144,9 +145,12 @@ RZ.Item.prototype.init = function() {
 	RZ.Object.prototype.init.call(this);
 	this.price = 0;
 	this.amount = 1; /* how many bought at once */
+	this.name = "";
 	this.desc = "";
+	this.requiresDirection = true;
+	this._event = null;
 }
-RZ.Item.prototype.use = function() {} /* using a bought item */
+RZ.Item.prototype.use = function(dir) {} /* using a bought item */
 RZ.Item.prototype.activate = function() {} /* someone stepped on an item */
 RZ.Item.prototype._die = function() {
 	RZ.rz.removeItem(this);
@@ -155,8 +159,8 @@ RZ.Item.prototype._die = function() {
 /**
  * Dead undead
  */
-RZ.Corpse = OZ.Class().extend(RZ.Item);
-RZ.Corpse.prototype.init = function(fg) {
+RZ.Item.Corpse = OZ.Class().extend(RZ.Item);
+RZ.Item.Corpse.prototype.init = function(fg) {
 	RZ.Item.prototype.init.call(this);
 	this.visual = {ch:"%", fg:fg};
 	this.blocks = 0;
@@ -165,40 +169,55 @@ RZ.Corpse.prototype.init = function(fg) {
 /**
  * House - undestructible decoration
  */
-RZ.House = OZ.Class().extend(RZ.Item);
-RZ.House.prototype.init = function(ch) {
+RZ.Item.House = OZ.Class().extend(RZ.Item);
+RZ.Item.House.prototype.init = function(ch) {
 	RZ.Item.prototype.init.call(this);
 	this.visual = {ch:ch,fg:"#930"};
 }
-RZ.House.prototype.damage = function(who) {} /* undestructible */
+RZ.Item.House.prototype.damage = function(who) {} /* undestructible */
 
 /**
  * Window - destructible decoration
  */
-RZ.Window = OZ.Class().extend(RZ.Item);
-RZ.Window.prototype.init = function(horiz) {
+RZ.Item.Window = OZ.Class().extend(RZ.Item);
+RZ.Item.Window.prototype.init = function(horiz) {
 	RZ.Item.prototype.init.call(this);
 	this.visual = {ch:horiz ? "═" : "║",fg:"#39f"};
 	this.blocks = 1;
 	this.hp = 2;
 }
 
+RZ.Item.Crowbar = OZ.Class().extend(RZ.Item);
+RZ.Item.Crowbar.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.name = "Crowbar";
+	this.desc = "the ultimate melee";
+}
+
+RZ.Item.Crowbar.prototype.use = function(dir) {
+	var x = RZ.rz.player.x + DIRS[dir][0];
+	var y = RZ.rz.player.y + DIRS[dir][1];
+	var what = RZ.rz.at(x, y);
+	if (!what) { return; }
+	what.damage(RZ.rz.player);
+}
 
 /**
  * Barricade - blocks movement
  */
-RZ.Barricade = OZ.Class().extend(RZ.Item);
-RZ.Barricade.prototype.init = function() {
+RZ.Item.Barricade = OZ.Class().extend(RZ.Item);
+RZ.Item.Barricade.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
 	this.hp = 5;
 	this.visual = {ch:"#"};
 	this._updateVisual();
 	this.blocks = 1;
 	this.amount = 3;
-	this.desc = "Wooden barricade; destroyed after "+this.hp+" hits";
+	this.name = "Wooden barricade";
+	this.desc = "destroyed after "+this.hp+" hits";
 }
 
-RZ.Barricade.prototype._updateVisual = function() {
+RZ.Item.Barricade.prototype._updateVisual = function() {
 	var colors = ["", "#300", "#520", "#850", "#a70", "#c90"];
 	this.visual.fg = colors[this.hp];
 }
@@ -206,15 +225,16 @@ RZ.Barricade.prototype._updateVisual = function() {
 /**
  * Rake - destroys one zombie
  */
-RZ.Rake = OZ.Class().extend(RZ.Item);
-RZ.Rake.prototype.init = function() {
+RZ.Item.Rake = OZ.Class().extend(RZ.Item);
+RZ.Item.Rake.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
 	this.blocks = 0;
 	this.visual = {ch:"r", fg:"#999"};
 	this.price = 1;
 	this.amount = 3;
-	this.desc = "<strong>Rake:</strong> step on it and die";
+	this.name = "Rake";
+	this.desc = "step on it and die";
 }
-RZ.Rake.prototype.activate = function(who) {
+RZ.Item.Rake.prototype.activate = function(who) {
 	who.damage(this);
 }

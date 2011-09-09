@@ -16,6 +16,14 @@ canvas {
 	margin: auto;
 }
 
+#status {
+	font-family: Inconsolata;
+	text-align: center;
+	color: white;
+	margin: 0px;
+	padding: 1em;
+}
+
 #dialog {
 	position: absolute;
 	background-color: saddlebrown;
