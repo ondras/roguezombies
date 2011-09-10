@@ -150,7 +150,13 @@ RZ.Item.prototype.init = function() {
 	this.requiresDirection = true;
 	this._event = null;
 }
-RZ.Item.prototype.use = function(dir) {} /* using a bought item */
+RZ.Item.prototype.use = function(dir) { /* using a bought item */
+	this.amount--;
+	if (!this.amount) { /* remove from inventory */
+		var index = RZ.rz.player.items.indexOf(this);
+		RZ.rz.player.items.splice(index, 1);
+	}
+} 
 RZ.Item.prototype.activate = function() {} /* someone stepped on an item */
 RZ.Item.prototype._die = function() {
 	RZ.rz.removeItem(this);
@@ -235,6 +241,21 @@ RZ.Item.Rake.prototype.init = function() {
 	this.name = "Rake";
 	this.desc = "step on it and die";
 }
+RZ.Item.Rake.prototype.use = function(dir) {
+	var offsets = [0, -1, 1];
+	for (var i=0;i<offsets.length;i++) {
+		var offset = offsets[i];
+		var d = DIRS[(dir+offset+8) % 8];
+		var x = RZ.rz.player.x + d[0];
+		var y = RZ.rz.player.y + d[1];
+		var what = RZ.rz.at(x, y);
+		if (!what) { continue; } /* FIXME ignorovat predmety? */
+		RZ.rz.addItem(new RZ.Item.Rake(), x, y);
+		RZ.Item.prototype.use.call(this, dir);
+		if (!this.amount) { break; }
+	}
+}
 RZ.Item.Rake.prototype.activate = function(who) {
 	who.damage(this);
+	this._die();
 }

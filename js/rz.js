@@ -185,9 +185,22 @@ RZ.prototype._useDialog = function() {
 }
 
 RZ.prototype._buyDone = function(item) {
-	alert("buy " + item);
+	if (!item) { return false; }
+	
+	var items = this.player.items;
+	var ok = false;
+	for (var i=0;i<items.length;i++) {
+		if (items[i].constructor == item.constructor) { 
+			items[i].amount += item.amount;
+			ok = true;
+			break;
+		}
+	}
+	
+	if (!ok) { items.push(item); }
+	
 	this._playerLoop();
-	return !!item; /* leave dialog open only when an item was selected */
+	return true;
 }
 
 RZ.prototype._useDone = function(item) {
