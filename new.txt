@@ -1,0 +1,16 @@
+kde se pouziva .at() a proc:
+
+- pri pohybu hrace, jestli se tam da jit
+- zombies testuji, co je vedle nich (jestli se tam da utocit/jit)
+- zombies kdyz vybiraji, na kom zavolat .damage() pri utoku
+- zombies pri smrti kdyz testuji, je-li mozno udelat mrtvolu
+- crowbar pri sve akci aby vedel na cem volat .damage()
+- rake pri sve akci aby vedel na cem volat .damage()
+
+
+
+oddelit:
+
+- podlozi (nic nebo mrtvola)
+- itemy
+- zombici + hrac
