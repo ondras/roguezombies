@@ -14,3 +14,18 @@ oddelit:
 - podlozi (nic nebo mrtvola)
 - itemy
 - zombici + hrac
+
+
+
+interakce s podkladem:
+
+- hrac se pohybuje po volnych polich (getBeing, getItem().blocking => mozna isFree?)
+- zombies se pohybuji po volnych polich (getBeing, getItem().blocking => mozna isFree?)
+- zombies utoci na hrace (getBeing instanceof RZ.Player?)
+- zombies utoci na rozbitelne prekazky (getItem().blocking)
+- zombies nechavaji mrtvolu (getBackground() ? )
+- pokladani predmetu na zem (getItem())
+- predmety pri sve aktivaci poskozuji sebe a obcas okoli (
+  - ma vybuch poskodit hrace?
+  - ma vybuch poskodit (blocking) predmet?
+  - ma crowbar poskodit (blocking) predmet?
