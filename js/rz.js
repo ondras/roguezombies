@@ -185,7 +185,10 @@ RZ.prototype._useDialog = function() {
 }
 
 RZ.prototype._buyDone = function(item) {
-	if (!item) { return false; }
+	if (!item) { 
+		this._playerLoop();
+		return false; 
+	}
 	
 	var items = this.player.items;
 	var ok = false;
@@ -206,13 +209,13 @@ RZ.prototype._buyDone = function(item) {
 RZ.prototype._useDone = function(item) {
 	if (!item) { /* no item was picked */
 		this._playerLoop();
-		return;
+		return false;
 	}
 	
 	if (!item.requiresDirection) {
 		item.use();
 		this._playerLoop();
-		return; /* FIXME what next? */
+		return false; /* FIXME what next? */
 	}
 	
 	this._pendingItem = item;
@@ -423,6 +426,7 @@ RZ.Dialog.prototype._click = function(e) {
 	var t = OZ.Event.target(e);
 	if (t.nodeName.toLowerCase() != "input") { return; }
 	var code = t.value.charCodeAt(0);
+	this._processCode(code);
 }
 
 RZ.Dialog.prototype._processCode = function(code) {
@@ -439,6 +443,22 @@ RZ.Dialog.prototype._processCode = function(code) {
 }
 
 RZ.Dialog.prototype._close = function() {
+	while (this._ec.length) { OZ.Event.remove(this._ec.pop()); }
+
+	var s = this._div.style;
+	if ("MozTransition" in s || "webkitTransition" in s || "transition" in s || "oTransition" in s) {
+		var done = this._closeDone.bind(this);
+		this._ec.push(OZ.Event.add(this._div, "transitionend", done));
+		this._ec.push(OZ.Event.add(this._div, "oTransitionEnd", done));
+		this._ec.push(OZ.Event.add(this._div, "webkitTransitionEnd", done));
+		this._div.className = "hidden";
+	} else {
+		this._closeDone();
+	}
+
+}
+
+RZ.Dialog.prototype._closeDone = function() {
 	while (this._ec.length) { OZ.Event.remove(this._ec.pop()); }
 	this._div.parentNode.removeChild(this._div);
 }

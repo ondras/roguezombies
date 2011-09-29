@@ -37,3 +37,19 @@ canvas {
 #dialog table thead {
 	font-weight: bold;
 }
+
+#dialog {
+	-moz-transition: all 500ms;
+	-o-transition: all 500ms;
+	-webkit-transition: all 500ms;
+	transition: all 500ms;
+}
+
+.hidden {
+	-moz-transform: rotate(360deg) scale(0);
+	-webkit-transform: rotate(360deg) scale(0);
+	-ms-transform: rotate(360deg) scale(0);
+	-o-transform: rotate(360deg) scale(0);
+	transform: rotate(360deg) scale(0);
+	opacity: 0;
+}

@@ -25,7 +25,7 @@ interakce s podkladem:
 - zombies utoci na rozbitelne prekazky (getItem().blocking)
 - zombies nechavaji mrtvolu (getBackground() ? )
 - pokladani predmetu na zem (getItem())
-- predmety pri sve aktivaci poskozuji sebe a obcas okoli (
+- predmety pri sve aktivaci poskozuji sebe a obcas okoli
   - ma vybuch poskodit hrace?
   - ma vybuch poskodit (blocking) predmet?
   - ma crowbar poskodit (blocking) predmet?
