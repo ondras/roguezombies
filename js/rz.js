@@ -20,28 +20,56 @@ RZ.prototype.init = function() {
 	RZ.rz = this;
 	this._lock = 0;
 	this._size = [80, 25];
-	this._char = [0, 0];
-	this._grass = new RZ.Grass();
+	this._grass = new RZ.Object();
+	this._grass.visual = {ch:".", fg:"gray"};
+	
+	this._layers = {
+		bg: {},
+		items: {},
+		beings: {},
+		fx: {}
+	}
+	
 	this._zombies = [];
-	this._beings = {};
-	this._items = {};
 	this._pendingItem = null;
 	
-	this._initCanvas();
+	this._canvas = new OZ.Canvas(this);
+	document.body.appendChild(this._canvas.getCanvas());
+
 	this._initStatus();
+	this._canvas.sync();
 	this._initItems();
-	this._resize();
 
 	this._zombiePotential = 4;
 	this._rounds = 0;
-	this.player = new RZ.Player();
+	this._score = 0; /* dead zombies */
+	this.player = new RZ.Player(this._status.$);
 	this.addBeing(this.player, Math.round(this._size[0]/2), Math.round(this._size[1]/2));
 	
 	this._playerLoop();
 }
 
+RZ.prototype.getCanvasFont = function() {
+	return "Inconsolata";
+}
+
+RZ.prototype.getCanvasMargin = function() {
+	return [0, this._status.container.offsetHeight];
+}
+
+RZ.prototype.getCanvasSize = function() {
+	return this._size;
+}
+
+RZ.prototype.getCanvasData = function(x, y) {
+	var id = x+"-"+y;
+	var what = (this._layers.fx[id] || this._layers.beings[id] || this._layers.items[id] || this._layers.bg[id] || this._grass);	
+	var vis = what.visual;
+	return [vis.ch, vis.fg];
+}
+
 RZ.prototype.status = function(text) {
-	this._status.innerHTML = text || "&nbsp;";
+	this._status.status.innerHTML = text || "&nbsp;";
 }
 
 RZ.prototype.lock = function() {
@@ -53,16 +81,57 @@ RZ.prototype.unlock = function() {
 	if (!this._lock) { this._playerLoop(); }
 }
 
+RZ.prototype.addBeing = function(being, x, y) {
+	being.x = x;
+	being.y = y;
+	this._layers.beings[x+"-"+y] = being;
+	this.draw(x, y);
+	this._updateZombies();
+}
+
+RZ.prototype.addItem = function(item, x, y) {
+	item.x = x;
+	item.y = y;
+	this._layers.items[x+"-"+y] = item;
+	this.draw(x, y);
+}
+
+RZ.prototype.addBackground = function(bg, x, y) {
+	this._layers.bg[x+"-"+y] = bg;
+	this.draw(x, y);
+}
+
+RZ.prototype.addFX = function(fx, x, y) {
+	this._layers.fx[x+"-"+y] = fx;
+	this.draw(x, y);
+}
+
 RZ.prototype.removeItem = function(item) {
 	var id = item.x+"-"+item.y;
-	delete this._items[id];
+	delete this._layers.items[id];
 	this.draw(item.x, item.y);
 }
 
 RZ.prototype.removeBeing = function(being) {
 	var id = being.x+"-"+being.y;
-	delete this._beings[id];
+	delete this._layers.beings[id];
 	this.draw(being.x, being.y);
+	this._score++;
+	this._updateZombies();
+}
+
+RZ.prototype.removeBackground = function(x, y) {
+	delete this._layers.bg[x+"-"+y];
+	this.draw(x, y);
+}
+
+RZ.prototype.removeFX = function(x, y) {
+	delete this._layers.bg[x+"-"+y];
+	this.draw(x, y);
+}
+
+RZ.prototype._updateZombies = function() {
+	this._status.zombies.innerHTML = "Zombies: " + this._zombies.length + "/" + this._score;
 }
 
 RZ.prototype._spawnZombies = function(amount) {
@@ -79,20 +148,6 @@ RZ.prototype._spawnZombies = function(amount) {
 		this._zombies.push(z);
 	}
 };
-
-RZ.prototype.addBeing = function(being, x, y) {
-	being.x = x;
-	being.y = y;
-	this._beings[x+"-"+y] = being;
-	this.draw(x, y);
-}
-
-RZ.prototype.addItem = function(item, x, y) {
-	item.x = x;
-	item.y = y;
-	this._items[x+"-"+y] = item;
-	this.draw(x, y);
-}
 
 RZ.prototype._turnPlayer = function() {
 	this._rounds++;
@@ -136,11 +191,13 @@ RZ.prototype._keyDown = function(e) {
 	if (dir > -1) {
 		var x = this.player.x + DIRS[dir][0];
 		var y = this.player.y + DIRS[dir][1];
-		if (this.at(x, y).blocks) { 
+		var being = this.getBeing(x, y);
+		var item = this.getItem(x, y);
+		if (being || (item && !item.destructible)) { 
 			this._playerLoop();
 			return; 
 		}
-		this.move(this.player, dir);
+		this.moveBeing(this.player, dir);
 	}
 
 	this._turnZombies();
@@ -236,103 +293,54 @@ RZ.prototype._turnZombies = function() {
 }
 
 RZ.prototype.gameOver = function() {
-	this._zombies = [];
-	alert("GAME OVER in round " + this._rounds);
+	alert("GAME OVER in round " + this._rounds + ", score: " + this._score);
+	this.lock();
 }
 
-RZ.prototype.move = function(what, dir) {
-	var id = what.x+"-"+what.y;
-	delete this._beings[id];
-	this.draw(what.x, what.y);
-	what.x += DIRS[dir][0];
-	what.y += DIRS[dir][1];
-	id = what.x+"-"+what.y;
-	this._beings[id] = what;
-	this.draw(what.x, what.y);
+RZ.prototype.moveBeing = function(being, dir) {
+	var id = being.x+"-"+being.y;
+	delete this._layers.beings[id];
+	this.draw(being.x, being.y);
+	being.x += DIRS[dir][0];
+	being.y += DIRS[dir][1];
+	id = being.x+"-"+being.y;
+	this._layers.beings[id] = being;
+	this.draw(being.x, being.y);
 	
-	var item = this._items[id];
-	if (item) { item.activate(what); }
-}
-
-RZ.prototype.at = function(x, y) {
-	if (x < 0 || y < 0 || x >= this._size[0] || y >= this._size[1]) { return null; }
-
-	var id = x+"-"+y;
-	return (this._beings[id] || this._items[id] || this._grass);
-}
-
-RZ.prototype.draw = function(x, y) {
-	var left = x*(this._char[0]+0*2);
-	var top = y*(this._char[1]+0*2);
-	this._canvas.fillStyle = "black";
-	this._canvas.fillRect(left, top, this._char[0]+0*2, this._char[1]+0*2);
-	
-	var id = x+"-"+y;
-	var what = this._beings[id] || this._items[id] || this._grass;
-	
-	var vis = what.visual;
-	this._canvas.fillStyle = vis.fg;
-	this._canvas.fillText(vis.ch, left+0*1, top + this._char[1] + 0*1);	
-}
-
-RZ.prototype._initStatus = function() {
-	this._status = OZ.DOM.elm("pre", {id:"status"});
-	document.body.appendChild(this._status);
-	this.status();
-}
-
-RZ.prototype._initCanvas = function() {
-	var c = OZ.DOM.elm("canvas");
-	document.body.appendChild(c);
-	this._canvas = c.getContext("2d");
-	OZ.Event.add(window, "resize", this._resize.bind(this));
-}
-
-RZ.prototype._getCharSize = function(avail) {
-	var span = OZ.DOM.elm("span", {position:"absolute",innerHTML:"x"});
-	document.body.appendChild(span);
-	
-	var size = 1;
-	while (1) {
-		span.style.fontSize = size + "px";
-		var charWidth = span.offsetWidth;
-		var charHeight = span.offsetHeight;
-		var width = charWidth * this._size[0];
-		var height = charHeight * this._size[1];
-		
-		if (width > avail[0] || height > avail[1]) {
-			span.style.fontSize = (size-1) + "px";
-			var result = [size-1, span.offsetWidth, span.offsetHeight];
-			span.parentNode.removeChild(span);
-			return result;
-		}
-		
-		size++;
+	if (being != this.player) {
+		var item = this._layers.items[id];
+		if (item) { item.activate(being); }
 	}
 }
 
-RZ.prototype._resize = function(e) {
-	var win = OZ.DOM.win();
-	win[1] -= this._status.offsetHeight;
-	var charSize = this._getCharSize(win);
+RZ.prototype.getBeing = function(x, y) {
+	return this._layers.beings[x+"-"+y];
+}
 
-	var size = charSize[0];
-	this._char[0] = charSize[1];
-	this._char[1] = charSize[2];
-	
-	/* adjust canvas size */
-	var w = this._size[0] * this._char[0];
-	var h = this._size[1] * this._char[1];
-	this._canvas.canvas.width = w;
-	this._canvas.canvas.height = h;
-	this._canvas.font = size + "px Inconsolata";
-	this._canvas.textBaseline = "bottom";
+RZ.prototype.getItem = function(x, y) {
+	return this._layers.items[x+"-"+y];
+}
 
-	for (var i=0;i<this._size[0];i++) {
-		for (var j=0;j<this._size[1];j++) {
-			this.draw(i, j);
-		}
-	}	
+RZ.prototype.isValid = function(x, y) {
+	return (x >= 0 && y >= 0 && x < this._size[0] && y < this._size[1]);
+}
+
+RZ.prototype.draw = function(x, y) {
+	this._canvas.draw(x, y);
+}
+
+RZ.prototype._initStatus = function() {
+	this._status = {
+		container: OZ.DOM.elm("pre", {id:"status"}),
+		$: OZ.DOM.elm("span", {className:"money"}),
+		zombies: OZ.DOM.elm("span", {className:"zombies", title:"Alive/Dead"}),
+		status: OZ.DOM.elm("span"),
+	}
+	OZ.DOM.append(
+		[document.body, this._status.container],
+		[this._status.container, this._status.$, this._status.zombies, this._status.status]
+	);
+	this.status();
 }
 
 RZ.prototype._initItems = function() {

@@ -24,6 +24,14 @@ canvas {
 	padding: 1em;
 }
 
+#status .money {
+	float: left;
+}
+
+#status .zombies {
+	float: right;
+}
+
 #dialog {
 	position: absolute;
 	background-color: saddlebrown;
