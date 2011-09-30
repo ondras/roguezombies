@@ -31,19 +31,16 @@ RZ.Player.prototype.init = function(status) {
 	this._$ = 0;
 	this.items = [new RZ.Item.Crowbar()];
 	this._updateVisual();
-	this.adjustMoney(0);
-}
-
-RZ.Player.prototype.distance = function(x, y) {
-	var dx = x-this.x;
-	var dy = y-this.y;
-//	return Math.abs(dx)+Math.abs(dy);
-	return Math.max(Math.abs(dx), Math.abs(dy));
+	this.adjustMoney(10);
 }
 
 RZ.Player.prototype.adjustMoney = function(diff) {
 	this._$ += diff;
 	this._status.innerHTML = "Money: " + this._$;
+}
+
+RZ.Player.prototype.getMoney = function() {
+	return this._$;
 }
 
 RZ.Player.prototype._updateVisual = function() {
@@ -60,8 +57,10 @@ RZ.Player.prototype._die = function() {
  * Braaainz!
  */
 RZ.Zombie = OZ.Class().extend(RZ.Object);
+
 RZ.Zombie.prototype.init = function() {
 	RZ.Object.prototype.init.call(this);
+	this._manhattan = true; /* use manhattan movement mode? */
 	var color = ["DarkOliveGreen", "LightSlateGray", "Olive", "OliveDrab", "SaddleBrown", "GoldenRod", "DarkSeaGreen"].random();
 	var ch = ["z", "Z"].random();
 	this.visual = {fg:color, ch:ch};
@@ -73,7 +72,8 @@ RZ.Zombie.prototype.act = function() {
 	var bestBlocks = -1;
 	var bestDist = Infinity;
 
-	for (var i=0;i<DIRS.length;i+=1) {
+	var step = (this._manhattan ? 2 : 1);
+	for (var i=0;i<DIRS.length;i+=step) {
 		var x = this.x + DIRS[i][0];
 		var y = this.y + DIRS[i][1];
 		if (!RZ.rz.isValid(x, y)) { continue; } /* out of area */
@@ -94,7 +94,7 @@ RZ.Zombie.prototype.act = function() {
 		var blocks = (item ? item.blocks : 0);
 		
 		if (blocks == 1 && bestBlocks == 0) { continue; } /* worse blocking, not interested */
-		var d = player.distance(x, y);
+		var d = this._distance(x, y, player.x, player.y);
 
 		/** 
 		 * reset if:
@@ -124,6 +124,16 @@ RZ.Zombie.prototype.act = function() {
 	
 }
 
+RZ.Zombie.prototype._distance = function(x1, y1, x2, y2) {
+	var dx = Math.abs(x1-x2);
+	var dy = Math.abs(y1-y2);
+	if (this._manhattan) {
+		return dx+dy;
+	} else {
+		return Math.max(dx, dy);
+	}
+}
+
 RZ.Zombie.prototype._die = function() {
 	RZ.rz.player.adjustMoney(1);
 	RZ.rz.removeBeing(this);
@@ -139,13 +149,12 @@ RZ.Zombie.prototype._die = function() {
 RZ.Item = OZ.Class().extend(RZ.Object);
 RZ.Item.prototype.init = function() {
 	RZ.Object.prototype.init.call(this);
-	this.blocks = 2; /* zombie pathfinding support: 0 passable, 1 destructible, 2 blocking */
+	this.blocks = 0; /* zombie pathfinding support: 0 passable, 1 destructible, 2 blocking */
 	this.price = 0; /* when buying */
 	this.amount = 1; /* how many bought at once */
 	this.name = "";
 	this.desc = "";
-	this.requiresDirection = true;
-	this._event = null;
+	this.directional = true;
 }
 RZ.Item.prototype.use = function(dir) { /* using a bought item */
 	this.amount--;
@@ -157,6 +166,51 @@ RZ.Item.prototype.use = function(dir) { /* using a bought item */
 RZ.Item.prototype.activate = function(being) {} /* someone stepped on an item */
 RZ.Item.prototype._die = function() {
 	RZ.rz.removeItem(this);
+}
+RZ.Item.prototype._explode = function(coords) { /* explode on a set of coordinates */
+	RZ.rz.lock();
+	var fx = new RZ.Object();
+	fx.visual.ch = "*";
+
+	for (var i=0;i<coords.length;i++) {
+		var c = coords[i];
+		var being = RZ.rz.getBeing(c[0], c[1]);
+		if (being) {
+			if (being != RZ.rz.player) { being.damage(this); }
+		} else {
+			RZ.rz.removeBackground(c[0], c[1]);
+		}
+	}
+	
+	var length = 400;
+	var start = new Date().getTime();
+	
+	var step = function() {
+		var ts = new Date().getTime();
+		var fraction = (ts-start)/length;
+		if (fraction >= 1) {
+			for (var i=0;i<coords.length;i++) { RZ.rz.removeFX(coords[i][0], coords[i][1]); }
+			clearInterval(interval);
+			RZ.rz.unlock();
+		} else {
+			this._explosionStep(coords, fx, fraction);
+		}
+	}.bind(this);
+	
+	step();
+	var interval = setInterval(step, 30);
+}
+RZ.Item.prototype._explosionStep = function(coords, fx, fraction) {
+	var amount = Math.round(3*255*(1-fraction));
+	
+	var r = Math.max(0, Math.min(amount-0*255, 255));
+	var g = Math.max(0, Math.min(amount-1*255, 255));
+	var b = Math.max(0, Math.min(amount-2*255, 255));
+	fx.visual.fg = "rgb("+r+","+g+","+b+")"
+	
+	for (var i=0;i<coords.length;i++) {
+		RZ.rz.addFX(fx, coords[i][0], coords[i][1]);
+	}
 }
 
 /**
@@ -180,26 +234,6 @@ RZ.Item.Window.prototype.init = function(horiz) {
 }
 
 /**
- * Barricade - blocks movement
- */
-RZ.Item.Barricade = OZ.Class().extend(RZ.Item);
-RZ.Item.Barricade.prototype.init = function() {
-	RZ.Item.prototype.init.call(this);
-	this.hp = 5;
-	this.visual = {ch:"#"};
-	this._updateVisual();
-	this.blocks = 1;
-	this.amount = 3;
-	this.name = "Wooden barricade";
-	this.desc = "destroyed after "+this.hp+" hits";
-}
-
-RZ.Item.Barricade.prototype._updateVisual = function() {
-	var colors = ["", "#300", "#520", "#850", "#a70", "#c90"];
-	this.visual.fg = colors[this.hp];
-}
-
-/**
  * This one is always available
  */
 RZ.Item.Crowbar = OZ.Class().extend(RZ.Item);
@@ -207,6 +241,7 @@ RZ.Item.Crowbar.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
 	this.name = "Crowbar";
 	this.desc = "the ultimate melee";
+	this.amount = "∞";
 }
 
 RZ.Item.Crowbar.prototype.use = function(dir) {
@@ -214,9 +249,47 @@ RZ.Item.Crowbar.prototype.use = function(dir) {
 	var y = RZ.rz.player.y + DIRS[dir][1];
 	var being = RZ.rz.getBeing(x, y);
 	var item = RZ.rz.getItem(x, y);
-	if (!being && !item) { return; } /* crowbar can destroy even non-destructible items */
-	(being || item).damage(RZ.rz.player);
+	if (!being && !item) { 
+		RZ.rz.removeBackground(x, y);
+		return; 
+	} 
+	(being || item).damage(RZ.rz.player); /* crowbar can destroy even non-destructible items */
 }
+
+/**
+ * Barricade - blocks movement
+ */
+RZ.Item.Barricade = OZ.Class().extend(RZ.Item);
+RZ.Item.Barricade.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.hp = 5;
+	this.blocks = 1;
+	this.visual = {ch:"#"};
+	this._updateVisual();
+	this.price = 1;
+	this.amount = 3;
+	this.name = "Wooden barricade";
+	this.desc = "destroyed after "+this.hp+" hits";
+}
+RZ.Item.Barricade.prototype.use = function(dir) {
+	var offsets = [0, -1, 1];
+	for (var i=0;i<offsets.length;i++) {
+		var offset = offsets[i];
+		var d = DIRS[(dir+offset+8) % 8];
+		var x = RZ.rz.player.x + d[0];
+		var y = RZ.rz.player.y + d[1];
+		var item = RZ.rz.getItem(x, y);
+		if (item) { continue; } /* there is already an item */
+		RZ.rz.addItem(new RZ.Item.Barricade(), x, y);
+		RZ.Item.prototype.use.call(this, dir);
+		if (!this.amount) { break; }
+	}
+}
+RZ.Item.Barricade.prototype._updateVisual = function() {
+	var colors = ["", "#300", "#520", "#850", "#a70", "#c90"];
+	this.visual.fg = colors[this.hp];
+}
+
 
 /**
  * Rake - destroys one zombie
@@ -225,7 +298,7 @@ RZ.Item.Rake = OZ.Class().extend(RZ.Item);
 RZ.Item.Rake.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
 	this.blocks = 0;
-	this.visual = {ch:"r", fg:"#999"};
+	this.visual = {ch:"╛", fg:"#999"};
 	this.price = 1;
 	this.amount = 3;
 	this.name = "Rake";
@@ -239,7 +312,7 @@ RZ.Item.Rake.prototype.use = function(dir) {
 		var x = RZ.rz.player.x + d[0];
 		var y = RZ.rz.player.y + d[1];
 		var item = RZ.rz.getItem(x, y);
-		if (!item) { continue; } /* there is already an item */
+		if (item) { continue; } /* there is already an item */
 		RZ.rz.addItem(new RZ.Item.Rake(), x, y);
 		RZ.Item.prototype.use.call(this, dir);
 		if (!this.amount) { break; }
@@ -248,4 +321,39 @@ RZ.Item.Rake.prototype.use = function(dir) {
 RZ.Item.Rake.prototype.activate = function(being) {
 	being.damage(this);
 	this._die();
+}
+
+/**
+ * Mine - explosion
+ */
+RZ.Item.Mine = OZ.Class().extend(RZ.Item);
+RZ.Item.Mine.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.blocks = 0;
+	this.visual = {ch:"*", fg:"gray"};
+	this.price = 3;
+	this.amount = 1;
+	this.name = "Landmine";
+	this.desc = "fun for the whole group";
+}
+RZ.Item.Mine.prototype.use = function(dir) {
+	var x = RZ.rz.player.x + DIRS[dir][0];
+	var y = RZ.rz.player.y + DIRS[dir][1];
+	var item = RZ.rz.getItem(x, y);
+	if (item) { return; } /* there is already an item */
+
+	RZ.rz.addItem(new RZ.Item.Mine(), x, y);
+	RZ.Item.prototype.use.call(this, dir);
+}
+RZ.Item.Mine.prototype.activate = function(being) {
+	this._die();
+	var radius = 1;
+	var coords = [];
+	for (var i=this.x-radius;i<=this.x+radius;i++) {
+		for (var j=this.y-radius;j<=this.y+radius;j++) {
+			if (!RZ.rz.isValid(i, j)) { continue; }
+			coords.push([i, j]);
+		}
+	}
+	this._explode(coords);
 }
