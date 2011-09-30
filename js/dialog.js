@@ -186,7 +186,7 @@ RZ.Dialog.Welcome.prototype._build = function() {
 	OZ.DOM.addClass(this._container, "welcome");
 	var texts = [
 		"Those undead bastards are getting close to your house! It is time to put up some defenses, \
-		buy necessary tools, lay out some traps and get ready to kick many unded asses. \
+		buy necessary tools, lay out some traps and get ready to kick many brainless asses. \
 		Remember: they might eventually get you, so try to survive as long as possible!",
 		"This game is played only by keyboard arrows (to move yourself around) and \
 		letters (to buy and use stuff). You gain money for every zombie killed; you exchange money \
@@ -194,9 +194,9 @@ RZ.Dialog.Welcome.prototype._build = function() {
 		"Press any key to start game."
 	];
 	while (texts.length) { this._content.appendChild(OZ.DOM.elm("p", {innerHTML:texts.shift()})); }
-	this._ec.push(OZ.Event.add(document, "keydown", this._keyDown.bind(this)));
+	this._ec.push(OZ.Event.add(document, "keypress", this._keyPress.bind(this)));
 }
 
-RZ.Dialog.Welcome.prototype._keyDown = function(e) {
+RZ.Dialog.Welcome.prototype._keyPress = function(e) {
 	this._close();
 }
