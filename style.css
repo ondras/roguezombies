@@ -27,10 +27,12 @@ canvas {
 
 #status .money {
 	float: left;
+	color: gold;
 }
 
 #status .zombies {
 	float: right;
+	color: red;
 }
 
 #dialog {
@@ -70,12 +72,11 @@ canvas {
 	border-bottom: 1px solid white;
 }
 
-#dialog table tbody td:first-child {
+#dialog table tbody td:first-child, #dialog table td:last-child {
 	text-align: center;
 }
 
 #dialog table tfoot td {
-	text-align: center;
 	padding-top: 10px;
 	border-top: 1px solid white;
 }
