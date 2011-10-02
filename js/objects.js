@@ -461,3 +461,57 @@ RZ.Item.Bazooka.prototype.use = function(dir) {
 	}.bind(this);
 	step();	
 }
+
+/**
+ * Barbed wire
+ */
+RZ.Item.Wire = OZ.Class().extend(RZ.Item);
+RZ.Item.Wire.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.price = 3;
+	this.amount = 2;
+	this.name = "Barbed wire";
+	this.desc = "Automatically connects to near segments";
+	this.visual = {ch:"#", fg:"#888"};
+}
+RZ.Item.Wire.prototype.use = function(dir) {
+	RZ.Item.prototype.use.call(this, dir);
+	
+	/* place this block */
+	var d = DIRS[dir];
+	var cx = RZ.rz.player.x + d[0];
+	var cy = RZ.rz.player.y + d[1];
+	RZ.rz.addItem(this.clone(), cx, cy);
+	
+	/* try other directions */
+	for (var i=0;i<DIRS.length;i++) {
+		var d = DIRS[i];
+		var found = null;
+		var length = 1;
+		while (1) {
+			var x = cx + length*d[0];
+			var y = cy + length*d[1];
+			if (!RZ.rz.isValid(x, y) || RZ.rz.getBeing(x, y)) { break; }
+
+			var item = RZ.rz.getItem(x, y);
+			if (item) {
+				if (!this.equals(item)) { break; }
+				found = length;
+				break;
+			} 
+			
+			length++;
+		}
+		
+		if (!found) { continue; }
+		for (var j=0;j<found;j++) {
+			var x = cx + j*d[0];
+			var y = cy + j*d[1];
+			RZ.rz.addItem(this.clone(), x, y);
+		}
+	}
+}
+RZ.Item.Wire.prototype.activate = function(being) {
+	this._die();
+	being.damage(this);
+}

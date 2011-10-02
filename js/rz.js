@@ -245,6 +245,7 @@ RZ.prototype._buyDialog = function() {
 	var shop = [
 		new RZ.Item.Barricade(),
 		new RZ.Item.Rake(),
+		new RZ.Item.Wire(),
 		new RZ.Item.Mine("Small", 1),
 		new RZ.Item.Mine("Large", 2),
 		new RZ.Item.Bazooka(),
