@@ -173,6 +173,16 @@ RZ.Item.prototype.activate = function(being) {} /* someone stepped on an item */
 RZ.Item.prototype._die = function() {
 	RZ.rz.removeItem(this);
 }
+RZ.Item.prototype._explodeInRadius = function(x, y, r) {
+	var coords = [];
+	for (var i=x-r;i<=x+r;i++) {
+		for (var j=y-r;j<=y+r;j++) {
+			if (!RZ.rz.isValid(i, j)) { continue; }
+			coords.push([i, j]);
+		}
+	}
+	this._explode(coords);
+}
 RZ.Item.prototype._explode = function(coords) { /* explode on a set of coordinates */
 	RZ.rz.lock();
 	var fx = new RZ.Object();
@@ -361,16 +371,8 @@ RZ.Item.Mine.prototype.use = function(dir) {
 }
 RZ.Item.Mine.prototype.activate = function(being) {
 	this._die();
-	var coords = [];
-	for (var i=this.x-this.radius;i<=this.x+this.radius;i++) {
-		for (var j=this.y-this.radius;j<=this.y+this.radius;j++) {
-			if (!RZ.rz.isValid(i, j)) { continue; }
-			coords.push([i, j]);
-		}
-	}
-	this._explode(coords);
+	this._explodeInRadius(this.x, this.y, this.radius);
 }
-
 
 /**
  * Airstrike - ultimate explosion
@@ -384,6 +386,8 @@ RZ.Item.Airstrike.prototype.init = function() {
 	this.desc = "Ultimate bombing";
 }
 RZ.Item.Airstrike.prototype.use = function(dir) {
+	RZ.Item.prototype.use.call(this, dir);
+
 	var coords = [];
 	
 	var thickness = 2;
@@ -393,19 +397,67 @@ RZ.Item.Airstrike.prototype.use = function(dir) {
 	
 	/**
 	 * even directions use normals
-	 * odd directions use +1/+3 (to achieve a level of aesthecity)
+	 * odd directions use +1/+3 (to achieve a certain level of aesthetics)
 	 */
 	var dirOffset = (dir % 2 ? dir % 4 : 2);
 	var d2 = DIRS[(dir+dirOffset)%8];
 	
 	for (var i=-length;i<=length;i++) {
+		var strip = [];
 		for (var j=-thickness;j<=thickness;j++) {
 			var x = p.x + i*d1[0] + j*d2[0];
 			var y = p.y + i*d1[1] + j*d2[1];
-			if (RZ.rz.isValid(x, y)) { coords.push([x, y]); }
+			if (RZ.rz.isValid(x, y)) { strip.push([x, y]); }
 		}
+		coords.push(strip);
 	}
-	
-	this._explode(coords);
+	var step = function() {
+		this._explode(coords.shift());
+		if (coords.length) { setTimeout(step, 30); }
+		
+	}.bind(this);
+	step();
+}
+
+/**
+ * Bazooka - ranged explosion
+ */
+RZ.Item.Bazooka = OZ.Class().extend(RZ.Item);
+RZ.Item.Bazooka.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.price = 8;
+	this.amount = 1;
+	this.name = "Bazooka";
+	this.desc = "fire and forget";
+	this.visual = {ch:"*", fg:"yellow"};
+}
+RZ.Item.Bazooka.prototype.use = function(dir) {
 	RZ.Item.prototype.use.call(this, dir);
+	RZ.rz.lock();
+	
+	var offset = DIRS[dir];
+	var x = RZ.rz.player.x;
+	var y = RZ.rz.player.y;
+	
+	var step = function() {
+		RZ.rz.removeFX(x, y);
+		x += offset[0];
+		y += offset[1];
+		if (!RZ.rz.isValid(x, y)) { 
+			RZ.rz.unlock();
+			return;
+		}
+		
+		var being = RZ.rz.getBeing(x, y);
+		var item = RZ.rz.getItem(x, y);
+		if (being || (item && item.blocks > 0)) {
+			this._explodeInRadius(x, y, 2);
+			RZ.rz.unlock();
+		} else {
+			RZ.rz.addFX(this, x, y);
+			setTimeout(step, 50);
+		}
+		
+	}.bind(this);
+	step();	
 }

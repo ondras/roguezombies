@@ -50,7 +50,6 @@ RZ.Keyboard = {
 		return (code in def ? def[code] : null);
 	},
 	
-	
 	init: function() {
 		OZ.Event.add(window, "keydown", this._keyDown.bind(this));
 	}

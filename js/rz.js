@@ -162,7 +162,7 @@ RZ.prototype._spawnZombies = function(amount) {
 RZ.prototype._turnZombies = function() {
 	if (this._lock) { 
 		this._lockedMethod = arguments.callee;
-		return; 
+		return;
 	}
 
 	this.status();
@@ -247,6 +247,7 @@ RZ.prototype._buyDialog = function() {
 		new RZ.Item.Rake(),
 		new RZ.Item.Mine("Small", 1),
 		new RZ.Item.Mine("Large", 2),
+		new RZ.Item.Bazooka(),
 		new RZ.Item.Airstrike()
 	];
 	new RZ.Dialog.Items("Buy items", shop, this._buyDone.bind(this), true);
@@ -290,7 +291,7 @@ RZ.prototype._useDone = function(item) {
 	} else {
 		this._pendingItem = item;
 		RZ.rz.status("Use " + item.name + ": arrow keys to pick direction");
-		RZ.Keyboard.listen(this, this._keyDown);
+		RZ.Keyboard.listen(this, this._dirKeyDown);
 		this.lock();
 	}
 	
