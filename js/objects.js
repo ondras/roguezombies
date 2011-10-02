@@ -156,6 +156,12 @@ RZ.Item.prototype.init = function() {
 	this.desc = "";
 	this.directional = true;
 }
+RZ.Item.prototype.clone = function() {
+	return new this.constructor();
+}
+RZ.Item.prototype.equals = function(item) {
+	return (this.constructor == item.constructor);
+}
 RZ.Item.prototype.use = function(dir) { /* using a bought item */
 	this.amount--;
 	if (!this.amount) { /* remove from inventory */
@@ -280,7 +286,7 @@ RZ.Item.Barricade.prototype.use = function(dir) {
 		var y = RZ.rz.player.y + d[1];
 		var item = RZ.rz.getItem(x, y);
 		if (item) { continue; } /* there is already an item */
-		RZ.rz.addItem(new RZ.Item.Barricade(), x, y);
+		RZ.rz.addItem(this.clone(), x, y);
 		RZ.Item.prototype.use.call(this, dir);
 		if (!this.amount) { break; }
 	}
@@ -290,7 +296,6 @@ RZ.Item.Barricade.prototype._updateVisual = function() {
 	this.visual.fg = colors[this.hp];
 }
 
-
 /**
  * Rake - destroys one zombie
  */
@@ -298,7 +303,7 @@ RZ.Item.Rake = OZ.Class().extend(RZ.Item);
 RZ.Item.Rake.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
 	this.blocks = 0;
-	this.visual = {ch:"╛", fg:"#999"};
+	this.visual = {ch:"]", fg:"#999"};
 	this.price = 1;
 	this.amount = 3;
 	this.name = "Rake";
@@ -313,7 +318,7 @@ RZ.Item.Rake.prototype.use = function(dir) {
 		var y = RZ.rz.player.y + d[1];
 		var item = RZ.rz.getItem(x, y);
 		if (item) { continue; } /* there is already an item */
-		RZ.rz.addItem(new RZ.Item.Rake(), x, y);
+		RZ.rz.addItem(this.clone(), x, y);
 		RZ.Item.prototype.use.call(this, dir);
 		if (!this.amount) { break; }
 	}
@@ -327,14 +332,23 @@ RZ.Item.Rake.prototype.activate = function(being) {
  * Mine - explosion
  */
 RZ.Item.Mine = OZ.Class().extend(RZ.Item);
-RZ.Item.Mine.prototype.init = function() {
+RZ.Item.Mine.prototype.init = function(type, radius) {
 	RZ.Item.prototype.init.call(this);
 	this.blocks = 0;
 	this.visual = {ch:"*", fg:"gray"};
-	this.price = 3;
 	this.amount = 1;
-	this.name = "Landmine";
-	this.desc = "fun for the whole group";
+	this.type = type;
+	this.radius = radius;
+	this.name = type + " mine";
+	var d = 2*radius + 1;
+	this.price = d;
+	this.desc = "destroys an area of "+d+"x"+d;
+}
+RZ.Item.Mine.prototype.clone = function() {
+	return new this.constructor(this.type, this.radius);
+}
+RZ.Item.Mine.prototype.equals = function(item) {
+	return (item.constructor == this.constructor && item.radius == this.radius);
 }
 RZ.Item.Mine.prototype.use = function(dir) {
 	var x = RZ.rz.player.x + DIRS[dir][0];
@@ -342,18 +356,56 @@ RZ.Item.Mine.prototype.use = function(dir) {
 	var item = RZ.rz.getItem(x, y);
 	if (item) { return; } /* there is already an item */
 
-	RZ.rz.addItem(new RZ.Item.Mine(), x, y);
+	RZ.rz.addItem(this.clone(), x, y);
 	RZ.Item.prototype.use.call(this, dir);
 }
 RZ.Item.Mine.prototype.activate = function(being) {
 	this._die();
-	var radius = 1;
 	var coords = [];
-	for (var i=this.x-radius;i<=this.x+radius;i++) {
-		for (var j=this.y-radius;j<=this.y+radius;j++) {
+	for (var i=this.x-this.radius;i<=this.x+this.radius;i++) {
+		for (var j=this.y-this.radius;j<=this.y+this.radius;j++) {
 			if (!RZ.rz.isValid(i, j)) { continue; }
 			coords.push([i, j]);
 		}
 	}
 	this._explode(coords);
+}
+
+
+/**
+ * Airstrike - ultimate explosion
+ */
+RZ.Item.Airstrike = OZ.Class().extend(RZ.Item);
+RZ.Item.Airstrike.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.price = 20;
+	this.amount = 1;
+	this.name = "Airstrike";
+	this.desc = "Ultimate bombing";
+}
+RZ.Item.Airstrike.prototype.use = function(dir) {
+	var coords = [];
+	
+	var thickness = 2;
+	var length = 5;
+	var p = RZ.rz.player;
+	var d1 = DIRS[dir];
+	
+	/**
+	 * even directions use normals
+	 * odd directions use +1/+3 (to achieve a level of aesthecity)
+	 */
+	var dirOffset = (dir % 2 ? dir % 4 : 2);
+	var d2 = DIRS[(dir+dirOffset)%8];
+	
+	for (var i=-length;i<=length;i++) {
+		for (var j=-thickness;j<=thickness;j++) {
+			var x = p.x + i*d1[0] + j*d2[0];
+			var y = p.y + i*d1[1] + j*d2[1];
+			if (RZ.rz.isValid(x, y)) { coords.push([x, y]); }
+		}
+	}
+	
+	this._explode(coords);
+	RZ.Item.prototype.use.call(this, dir);
 }

@@ -28,11 +28,6 @@ RZ.Dialog.prototype._sync = function() {
 	this._container.style.top = Math.round((win[1]-h)/2) + "px";
 }
 
-RZ.Dialog.prototype._keyDown = function(e) {
-	var kc = e.keyCode;
-	this._processCode(kc);
-}
-
 RZ.Dialog.prototype._click = function(e) {
 	var t = OZ.Event.target(e);
 	if (t.nodeName.toLowerCase() != "input") { return; }
@@ -61,6 +56,7 @@ RZ.Dialog.prototype._processCode = function(code) {
 
 RZ.Dialog.prototype._close = function() {
 	while (this._ec.length) { OZ.Event.remove(this._ec.pop()); }
+	RZ.Keyboard.forget(this);
 
 	var s = this._container.style;
 	if ("MozTransition" in s || "webkitTransition" in s || "transition" in s || "oTransition" in s) {
@@ -68,7 +64,10 @@ RZ.Dialog.prototype._close = function() {
 		this._ec.push(OZ.Event.add(this._container, "transitionend", done));
 		this._ec.push(OZ.Event.add(this._container, "oTransitionEnd", done));
 		this._ec.push(OZ.Event.add(this._container, "webkitTransitionEnd", done));
+		
+		var r = Math.floor(Math.random()*5);
 		OZ.DOM.addClass(this._container, "hidden");
+		OZ.DOM.addClass(this._container, "hidden-"+r);
 	} else {
 		this._closeDone();
 	}
@@ -92,7 +91,7 @@ RZ.Dialog.Items.prototype.init = function(title, itemlist, callback, showPrice) 
 	
 	RZ.Dialog.prototype.init.call(this, title);
 
-	this._ec.push(OZ.Event.add(document, "keydown", this._keyDown.bind(this)));
+	RZ.Keyboard.listen(this, this._keyDown);
 	this._ec.push(OZ.Event.add(this._content, "click", this._click.bind(this)));
 }
 
@@ -130,7 +129,7 @@ RZ.Dialog.Items.prototype._build = function() {
 		var amount = 0;
 		for (var j=0;j<playerItems.length;j++) {
 			var playerItem = playerItems[j];
-			if (item.constructor == playerItem.constructor) { amount = playerItem.amount; }
+			if (item.equals(playerItem)) { amount = playerItem.amount; }
 		}
 		var td = OZ.DOM.elm("td", {innerHTML: amount});
 		tr.appendChild(td);

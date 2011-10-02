@@ -196,12 +196,12 @@ RZ.prototype._turnPlayer = function() {
 RZ.prototype._playerLoop = function() {
 	this.status("Arrow keys to move around, B to buy items, U to use an item");
 	this.lock();
-	this._event = OZ.Event.add(window, "keydown", this._keyDown.bind(this));
+	RZ.Keyboard.listen(this, this._keyDown);
 }
 
 RZ.prototype._keyDown = function(e) {
 	var code = e.keyCode;
-	var dir = this._keyCodeToDir(code);
+	var dir = RZ.Keyboard.keyCodeToDir(code);
 
 	if (dir === null) { /* no direction */
 		switch (code) {
@@ -225,46 +225,29 @@ RZ.prototype._keyDown = function(e) {
 	}
 
 	/* key succesully processed, terminate listening */
-	OZ.Event.remove(this._event);
+	RZ.Keyboard.forget(this);
 	this.unlock();
 }
 
 RZ.prototype._dirKeyDown = function(e) {
-	var dir = this._keyCodeToDir(e.keyCode);
+	var dir = RZ.Keyboard.keyCodeToDir(e.keyCode);
 	if (dir == -1 || dir === null) { return; }
 
 	this._pendingItem.use(dir);
 
-	OZ.Event.remove(this._event);
+	RZ.Keyboard.forget(this);
 	this.unlock();
 }
 
-RZ.prototype._keyCodeToDir = function(code) {
-	var def = {};
-	def[38] = 0;
-	def[104] = 0;
-	def[105] = 1;
-	def[39] = 2;
-	def[102] = 2;
-	def[99] = 3;
-	def[40] = 4;
-	def[98] = 4;
-	def[97] = 5;
-	def[37] = 6;
-	def[100] = 6;
-	def[103] = 7;
-	def[101] = -1;
-	def[109] = -1;
-	
-	return (code in def ? def[code] : null);
-}
 
 RZ.prototype._buyDialog = function() {
 	this.status("A-Y to buy, Z to exit");
 	var shop = [
 		new RZ.Item.Barricade(),
 		new RZ.Item.Rake(),
-		new RZ.Item.Mine()
+		new RZ.Item.Mine("Small", 1),
+		new RZ.Item.Mine("Large", 2),
+		new RZ.Item.Airstrike()
 	];
 	new RZ.Dialog.Items("Buy items", shop, this._buyDone.bind(this), true);
 }
@@ -283,7 +266,7 @@ RZ.prototype._buyDone = function(item) {
 	var items = this.player.items;
 	var found = false;
 	for (var i=0;i<items.length;i++) {
-		if (items[i].constructor == item.constructor) { 
+		if (items[i].equals(item)) { 
 			items[i].amount += item.amount;
 			found = true;
 			break;
@@ -291,8 +274,7 @@ RZ.prototype._buyDone = function(item) {
 	}
 	
 	if (!found) { 
-		var clone = new item.constructor();
-		items.push(clone); 
+		items.push(item.clone()); 
 	}
 	
 	this.player.adjustMoney(-item.price);
@@ -308,7 +290,7 @@ RZ.prototype._useDone = function(item) {
 	} else {
 		this._pendingItem = item;
 		RZ.rz.status("Use " + item.name + ": arrow keys to pick direction");
-		this._event = OZ.Event.add(window, "keydown", this._dirKeyDown.bind(this));
+		RZ.Keyboard.listen(this, this._keyDown);
 		this.lock();
 	}
 	
@@ -367,11 +349,6 @@ RZ.prototype._initStatus = function() {
 }
 
 RZ.prototype._initItems = function() {
-	this.addItem(new RZ.Item.Barricade(), 2, 2);
-	this.addItem(new RZ.Item.Barricade(), 1, 2);
-	this.addItem(new RZ.Item.Barricade(), 2, 1);
-	this.addItem(new RZ.Item.Mine(), 1, 1);
-	
 	var house = [
 		"╔══h══h══hh══h══h══╗",
 		"║                  ╵",
