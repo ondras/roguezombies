@@ -67,6 +67,10 @@ canvas {
 	color: white;
 }
 
+#dialog td {
+	padding: 3px;
+}
+
 #dialog table thead td {
 	font-weight: bold;
 	border-bottom: 1px solid white;

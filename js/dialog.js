@@ -122,7 +122,7 @@ RZ.Dialog.Items.prototype._build = function() {
 		tr.appendChild(td);
 		
 		if (this._showPrice) {
-			var td = OZ.DOM.elm("td", {innerHTML: item.price + " for " + item.amount});
+			var td = OZ.DOM.elm("td", {innerHTML: item.price + "&nbsp;for&nbsp;" + item.amount});
 			tr.appendChild(td);
 		}
 		
