@@ -154,8 +154,8 @@ RZ.prototype._spawnZombies = function(amount) {
 	for (var i=0;i<amount;i++) {
 		var corner = corners.random();
 		var z = new RZ.Zombie();
-		this.addBeing(z, corner[0], corner[1]);
 		this._zombies.push(z);
+		this.addBeing(z, corner[0], corner[1]);
 	}
 };
 
@@ -246,6 +246,7 @@ RZ.prototype._buyDialog = function() {
 		new RZ.Item.Barricade(),
 		new RZ.Item.Rake(),
 		new RZ.Item.Wire(),
+		new RZ.Item.Fence(),
 		new RZ.Item.Mine("Small", 1),
 		new RZ.Item.Mine("Large", 2),
 		new RZ.Item.Bazooka(),

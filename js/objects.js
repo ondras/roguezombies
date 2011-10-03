@@ -236,6 +236,7 @@ RZ.Item.House = OZ.Class().extend(RZ.Item);
 RZ.Item.House.prototype.init = function(ch) {
 	RZ.Item.prototype.init.call(this);
 	this.visual = {ch:ch,fg:"#930"};
+	this.hp = 2;
 	this.blocks = 2;
 }
 
@@ -470,8 +471,9 @@ RZ.Item.Wire.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
 	this.price = 3;
 	this.amount = 2;
+	this.blocks = 1;
 	this.name = "Barbed wire";
-	this.desc = "Automatically connects to near segments";
+	this.desc = "auto-connects to other wires; blocks &amp; damages zombies";
 	this.visual = {ch:"#", fg:"#888"};
 }
 RZ.Item.Wire.prototype.use = function(dir) {
@@ -504,14 +506,105 @@ RZ.Item.Wire.prototype.use = function(dir) {
 		}
 		
 		if (!found) { continue; }
-		for (var j=0;j<found;j++) {
+		for (var j=1;j<found;j++) {
 			var x = cx + j*d[0];
 			var y = cy + j*d[1];
 			RZ.rz.addItem(this.clone(), x, y);
 		}
 	}
 }
-RZ.Item.Wire.prototype.activate = function(being) {
-	this._die();
-	being.damage(this);
+RZ.Item.Wire.prototype.damage = function(being) {
+	being.damage(this); /* kill the zombie */
+	RZ.Item.prototype.damage.call(this, being); /* die normally */
 }
+
+/**
+ * Electric fence
+ */
+RZ.Item.Fence = OZ.Class().extend(RZ.Item);
+RZ.Item.Fence.prototype.init = function() {
+	RZ.Item.prototype.init.call(this);
+	this.price = 3;
+	this.amount = 2;
+	this.hp = 3;
+	this.name = "Electric fence";
+	this.desc = "auto-connects to other fences; damages zombies";
+	this.visual = {ch:"*"};
+	this.chars = ["|", "/", "-", "\\"];
+	this._updateVisual();
+}
+RZ.Item.Fence.prototype.use = function(dir) {
+	RZ.Item.prototype.use.call(this, dir);
+	
+	/* place this block */
+	var d = DIRS[dir];
+	var cx = RZ.rz.player.x + d[0];
+	var cy = RZ.rz.player.y + d[1];
+	RZ.rz.addItem(this.clone(), cx, cy);
+	
+
+	/* try other directions */
+	for (var i=0;i<DIRS.length;i++) {
+		var d = DIRS[i];
+		var found = null;
+		var length = 1;
+		while (1) {
+			var x = cx + length*d[0];
+			var y = cy + length*d[1];
+			if (!RZ.rz.isValid(x, y) || RZ.rz.getBeing(x, y)) { break; }
+
+			var item = RZ.rz.getItem(x, y);
+			if (item) {
+				if (!this.equals(item)) { break; }
+				found = length;
+				break;
+			} 
+			
+			length++;
+		}
+		
+		if (!found) { continue; }
+		for (var j=1;j<found;j++) {
+			var x = cx + j*d[0];
+			var y = cy + j*d[1];
+			var clone = this.clone();
+			clone.visual.ch = this.chars[i % this.chars.length];
+			RZ.rz.addItem(clone, x, y);
+		}
+		if (found > 1) {
+			var x = cx + found*d[0];
+			var y = cy + found*d[1];
+			var node = RZ.rz.getItem(x, y);
+			node.visual.ch = "*";
+			RZ.rz.draw(x, y);
+		}
+	}
+}
+RZ.Item.Fence.prototype.activate = function(being) {
+	being.damage(this); /* kill the zombie */
+	
+	this.damage(being); /* take some damage */	
+	for (var i=0;i<DIRS.length;i++) { /* let other segments take damage as well */
+		var d = DIRS[i];
+		var length = 1;
+		var ch = this.chars[i % this.chars.length];
+		while (1) {
+			var x = this.x + length * d[0];
+			var y = this.y + length * d[1];
+			var item = RZ.rz.getItem(x, y);
+			if (item && this.equals(item) && item.visual.ch == ch) {
+				item.damage(this);
+			} else {
+				break;
+			}
+
+			length++;
+		}
+	}
+}
+
+RZ.Item.Fence.prototype._updateVisual = function() {
+	var colors = ["", "#008", "#33a", "#88f"];
+	this.visual.fg = colors[this.hp];
+}
+
