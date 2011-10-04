@@ -551,7 +551,9 @@ RZ.Item.Fence.prototype.use = function(dir) {
 		while (1) {
 			var x = cx + length*d[0];
 			var y = cy + length*d[1];
-			if (!RZ.rz.isValid(x, y) || RZ.rz.getBeing(x, y)) { break; }
+			if (!RZ.rz.isValid(x, y)) { break; }
+			var being = RZ.rz.getBeing(x, y)
+			if (being && being != RZ.rz.player) { break; }
 
 			var item = RZ.rz.getItem(x, y);
 			if (item) {
