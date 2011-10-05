@@ -28,32 +28,6 @@ RZ.Dialog.prototype._sync = function() {
 	this._container.style.top = Math.round((win[1]-h)/2) + "px";
 }
 
-RZ.Dialog.prototype._click = function(e) {
-	var t = OZ.Event.target(e);
-	if (t.nodeName.toLowerCase() != "input") { return; }
-	var code = t.value.charCodeAt(0);
-	this._processCode(code);
-}
-
-RZ.Dialog.prototype._processCode = function(code) {
-	if (code == "Z".charCodeAt(0)) {
-		var open = this._callback(null);
-		if (!open) { this._close(); }
-		return;
-	}
-	
-	var index = code - "A".charCodeAt(0);
-	if (index >= this._itemlist.length) { return; }
-	var item = this._itemlist[index];
-	if (this._showPrice && item.price > RZ.rz.player.getMoney()) { return; }
-	var open = this._callback(item);
-	if (open) { 
-		this._build();
-	} else {
-		this._close(); 
-	}
-}
-
 RZ.Dialog.prototype._close = function() {
 	while (this._ec.length) { OZ.Event.remove(this._ec.pop()); }
 	RZ.Keyboard.forget(this);
@@ -139,7 +113,7 @@ RZ.Dialog.Items.prototype._build = function() {
 	
 	var tr = OZ.DOM.elm("tr");
 	var td = OZ.DOM.elm("td", {colSpan:(this._showPrice ? 4 : 3)});
-	var b = OZ.DOM.elm("input", {type:"button", value:"Z (cancel)"});
+	var b = OZ.DOM.elm("input", {type:"button", value:"ESC (cancel)"});
 	OZ.DOM.append([tf, tr], [tr, td], [td, b]);
 }
 
@@ -156,7 +130,7 @@ RZ.Dialog.Items.prototype._click = function(e) {
 }
 
 RZ.Dialog.Items.prototype._processCode = function(code) {
-	if (code == "Z".charCodeAt(0)) {
+	if (code == 27) {
 		var open = this._callback(null);
 		if (!open) { this._close(); }
 		return;
@@ -198,4 +172,33 @@ RZ.Dialog.Welcome.prototype._build = function() {
 
 RZ.Dialog.Welcome.prototype._keyPress = function(e) {
 	this._close();
+}
+
+/**
+ * Game over dialog
+ */
+RZ.Dialog.GameOver = OZ.Class().extend(RZ.Dialog);
+RZ.Dialog.GameOver.prototype.init = function(share, rounds, score) {
+	this._share = share;
+	this._rounds = rounds;
+	this._score = score;
+	
+	this._share.style.visibility = "visible";
+	RZ.Dialog.prototype.init.call(this, "Game over");
+	RZ.rz.lock();
+	
+}
+RZ.Dialog.GameOver.prototype._build = function() {
+	OZ.DOM.addClass(this._container, "gameover");
+	var p = OZ.DOM.elm("p");
+	p.innerHTML = "You managed to survive for <strong>" + this._rounds + "</strong> rounds and scored \
+				<strong>" + this._score + "</strong> kills. Congratulations!";
+	
+	var again = OZ.DOM.elm("p");
+	var btn = OZ.DOM.elm("input", {type:"button", value:"Again?"});
+	again.appendChild(btn);
+	OZ.Event.add(btn, "click", function() { location.reload(); });
+	
+	OZ.DOM.append([this._content, p, OZ.DOM.elm("hr"), this._share, OZ.DOM.elm("hr"), again]);
+	btn.focus();
 }

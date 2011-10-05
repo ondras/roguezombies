@@ -56,6 +56,14 @@ canvas {
 	width: 70%;
 }
 
+#dialog.gameover {
+	text-align: center;
+}
+
+#dialog #share span { 
+	vertical-align: top; 
+}
+
 #dialog h2 {
 	margin: 0px 0px 5px 0px;
 	text-align: center;

@@ -23,6 +23,9 @@ RZ.prototype.init = function() {
 	this._grass = new RZ.Object();
 	this._grass.visual = {ch:".", fg:"gray"};
 	
+	this._share = OZ.$("share");
+	this._share.parentNode.removeChild(share);
+	
 	this._layers = {
 		bg: {},
 		items: {},
@@ -229,8 +232,17 @@ RZ.prototype._keyDown = function(e) {
 	this.unlock();
 }
 
-RZ.prototype._dirKeyDown = function(e) {
-	var dir = RZ.Keyboard.keyCodeToDir(e.keyCode);
+RZ.prototype._useKeyDown = function(e) {
+	var code = e.keyCode;
+	if (code == 27) { /* cancel */
+		this._pendingItem = null;
+		RZ.Keyboard.forget(this);
+		this._useDialog();
+		this.unlock();
+		return;
+	}
+	
+	var dir = RZ.Keyboard.keyCodeToDir(code);
 	if (dir == -1 || dir === null) { return; }
 
 	this._pendingItem.use(dir);
@@ -241,7 +253,7 @@ RZ.prototype._dirKeyDown = function(e) {
 
 
 RZ.prototype._buyDialog = function() {
-	this.status("A-Y to buy, Z to exit");
+	this.status("A–Z to buy, ESC to exit");
 	var shop = [
 		new RZ.Item.Barricade(),
 		new RZ.Item.Rake(),
@@ -256,7 +268,7 @@ RZ.prototype._buyDialog = function() {
 }
 
 RZ.prototype._useDialog = function() {
-	this.status("A-Y to use, Z to cancel");
+	this.status("A–Z to use, ESC to cancel");
 	new RZ.Dialog.Items("Use items", RZ.rz.player.items, this._useDone.bind(this), false);
 }
 
@@ -292,8 +304,8 @@ RZ.prototype._useDone = function(item) {
 		item.use();
 	} else {
 		this._pendingItem = item;
-		RZ.rz.status("Use " + item.name + ": arrow keys to pick direction");
-		RZ.Keyboard.listen(this, this._dirKeyDown);
+		RZ.rz.status("Use " + item.name + ": arrow keys to pick direction, ESC to cancel");
+		RZ.Keyboard.listen(this, this._useKeyDown);
 		this.lock();
 	}
 	
@@ -301,8 +313,7 @@ RZ.prototype._useDone = function(item) {
 }
 
 RZ.prototype.gameOver = function() {
-	alert("GAME OVER in round " + this._rounds + ", score: " + this._score);
-	this.lock();
+	new RZ.Dialog.GameOver(this._share, this._rounds, this._score);
 }
 
 RZ.prototype.moveBeing = function(being, dir) {
