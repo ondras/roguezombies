@@ -1,5 +1,5 @@
 RZ.Sound = {
-	_supported: false,
+	supported: !!window.Audio,
 	_ext: "",
 	_bg: null,
 	_dom: {
@@ -24,8 +24,7 @@ RZ.Sound = {
 	],
 	
 	init: function() {
-		this._supported = !!window.Audio;
-		if (!this._supported) { return; }
+		if (!this.supported) { return; }
 		
 		this._build();
 		
@@ -35,10 +34,9 @@ RZ.Sound = {
 	},
 	
 	start: function() {
-		if (this._supported) { 
-			document.body.appendChild(this._dom.container);
-			this._playBackground(); 
-		}
+		if (!this.supported) { return; }
+		document.body.appendChild(this._dom.container);
+		this._playBackground(); 
 	},
 
 	_expandName: function(name) {
@@ -83,7 +81,10 @@ RZ.Sound = {
 		OZ.Event.add(this._dom.container, "mouseout", this._hide.bind(this));
 		
 		OZ.DOM.append(
-			[this._dom.container, OZ.DOM.elm("span", {innerHTML:"Currently playing: "}), this._dom.title, this._dom.controls],
+			[
+				this._dom.container, OZ.DOM.elm("span", {innerHTML:"Currently playing: "}), 
+				this._dom.title, this._dom.controls, OZ.DOM.elm("span", {id:"note", innerHTML:"♪"})
+			],
 			[this._dom.controls, prev, pause, next]
 		);
 	},

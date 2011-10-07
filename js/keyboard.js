@@ -2,15 +2,15 @@ RZ.Keyboard = {
 	_listener: null,
 	
 	_keyDown: function(e) {
-		if (this._listener) { this._listener[1].call(this._listener[0], e); }
+		if (this._listener) { this._listener[1](e); }
 	},
 	
-	listen: function(who, method) {
-		this._listener = [who, method];
+	listen: function(purpose, callback) {
+		this._listener = [purpose, callback];
 	},
 	
-	forget: function(who) {
-		if (this._listener && this._listener[0] == who) { this._listener = null; }
+	forget: function(purpose) {
+		if (this._listener && this._listener[0] == purpose) { this._listener = null; }
 	},
 	
 	keyCodeToDir: function(code) {

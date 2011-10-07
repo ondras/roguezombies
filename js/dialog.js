@@ -30,7 +30,7 @@ RZ.Dialog.prototype._sync = function() {
 
 RZ.Dialog.prototype._close = function() {
 	while (this._ec.length) { OZ.Event.remove(this._ec.pop()); }
-	RZ.Keyboard.forget(this);
+	RZ.Keyboard.forget("dialog");
 
 	var s = this._container.style;
 	if ("MozTransition" in s || "webkitTransition" in s || "transition" in s || "oTransition" in s) {
@@ -65,7 +65,7 @@ RZ.Dialog.Items.prototype.init = function(title, itemlist, callback, showPrice) 
 	
 	RZ.Dialog.prototype.init.call(this, title);
 
-	RZ.Keyboard.listen(this, this._keyDown);
+	RZ.Keyboard.listen("dialog", this._keyDown.bind(this));
 	this._ec.push(OZ.Event.add(this._content, "click", this._click.bind(this)));
 }
 
@@ -166,6 +166,8 @@ RZ.Dialog.Welcome.prototype._build = function() {
 		for items and traps. You start with three lives, so take care&hellip;",
 		"Press any key to start game."
 	];
+	
+	if (RZ.Sound.supported) { texts.push("(And don't forget to put on your headphones!)"); }
 	while (texts.length) { this._content.appendChild(OZ.DOM.elm("p", {innerHTML:texts.shift()})); }
 	this._ec.push(OZ.Event.add(document, "keypress", this._keyPress.bind(this)));
 }

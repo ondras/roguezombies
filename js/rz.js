@@ -31,7 +31,7 @@ RZ.prototype.init = function() {
 	}
 	
 	this._zombies = [];
-	this._pendingItem = null;
+	this._currentItem = null;
 	this._lockedMethod = null;
 	
 	this._canvas = new OZ.Canvas(this);
@@ -195,9 +195,19 @@ RZ.prototype._turnPlayer = function() {
 }
 
 RZ.prototype._playerLoop = function() {
-	this.status("Arrow keys to move around, B to buy items, U to use an item");
+	var status = "Arrow keys to move around, B to buy items, U to use an item";
+	
+	if (this._currentItem) {
+		if (this.player.items.indexOf(this._currentItem) > -1) {
+			status += ", R to reuse last item";
+		} else {
+			this._currentItem = null;
+		}
+	}
+
+	this.status(status);
 	this.lock();
-	RZ.Keyboard.listen(this, this._keyDown);
+	RZ.Keyboard.listen("player", this._keyDown.bind(this));
 }
 
 RZ.prototype._keyDown = function(e) {
@@ -206,11 +216,15 @@ RZ.prototype._keyDown = function(e) {
 
 	if (dir === null) { /* no direction */
 		switch (code) {
-			case 66: /* buy */
+			case "B".charCodeAt(0): /* buy */
 				this._buyDialog();
 			break;
-			case 85: /* use */
+			case "U".charCodeAt(0): /* use */
 				this._useDialog();
+			break;
+			case "R".charCodeAt(0): /* re-use */
+				if (!this._currentItem) { return; }
+				this._useDone(this._currentItem);
 			break;
 			default: /* non-mapped key */
 				return;
@@ -226,15 +240,14 @@ RZ.prototype._keyDown = function(e) {
 	}
 
 	/* key succesully processed, terminate listening */
-	RZ.Keyboard.forget(this);
+	RZ.Keyboard.forget("player");
 	this.unlock();
 }
 
 RZ.prototype._useKeyDown = function(e) {
 	var code = e.keyCode;
 	if (code == 27) { /* cancel */
-		this._pendingItem = null;
-		RZ.Keyboard.forget(this);
+		RZ.Keyboard.forget("item");
 		this._useDialog();
 		this.unlock();
 		return;
@@ -243,9 +256,9 @@ RZ.prototype._useKeyDown = function(e) {
 	var dir = RZ.Keyboard.keyCodeToDir(code);
 	if (dir == -1 || dir === null) { return; }
 
-	this._pendingItem.use(dir);
+	this._currentItem.use(dir);
 
-	RZ.Keyboard.forget(this);
+	RZ.Keyboard.forget("item");
 	this.unlock();
 }
 
@@ -296,14 +309,15 @@ RZ.prototype._buyDone = function(item) {
 }
 
 RZ.prototype._useDone = function(item) {
+	this._currentItem = item;
+	
 	if (!item) { /* no item was picked */
 		this._playerLoop();
 	} else if (!item.directional) { /* just use item */ 
 		item.use();
 	} else {
-		this._pendingItem = item;
 		RZ.rz.status("Use " + item.name + ": arrow keys to pick direction, ESC to cancel");
-		RZ.Keyboard.listen(this, this._useKeyDown);
+		RZ.Keyboard.listen("item", this._useKeyDown.bind(this));
 		this.lock();
 	}
 	
