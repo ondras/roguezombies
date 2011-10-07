@@ -23,9 +23,6 @@ RZ.prototype.init = function() {
 	this._grass = new RZ.Object();
 	this._grass.visual = {ch:".", fg:"gray"};
 	
-	this._share = OZ.$("share");
-	this._share.parentNode.removeChild(share);
-	
 	this._layers = {
 		bg: {},
 		items: {},
@@ -50,6 +47,7 @@ RZ.prototype.init = function() {
 	this.player = new RZ.Player(this._status.$);
 	this.addBeing(this.player, Math.round(this._size[0]/2), Math.round(this._size[1]/2));
 	
+	RZ.Sound.init();
 	new RZ.Dialog.Welcome();
 	this._turnPlayer();
 }
@@ -313,7 +311,7 @@ RZ.prototype._useDone = function(item) {
 }
 
 RZ.prototype.gameOver = function() {
-	new RZ.Dialog.GameOver(this._share, this._rounds, this._score);
+	new RZ.Dialog.GameOver(this._rounds, this._score);
 }
 
 RZ.prototype.moveBeing = function(being, dir) {

@@ -172,18 +172,17 @@ RZ.Dialog.Welcome.prototype._build = function() {
 
 RZ.Dialog.Welcome.prototype._keyPress = function(e) {
 	this._close();
+	RZ.Sound.start();
 }
 
 /**
  * Game over dialog
  */
 RZ.Dialog.GameOver = OZ.Class().extend(RZ.Dialog);
-RZ.Dialog.GameOver.prototype.init = function(share, rounds, score) {
-	this._share = share;
+RZ.Dialog.GameOver.prototype.init = function(rounds, score) {
 	this._rounds = rounds;
 	this._score = score;
 	
-	this._share.style.visibility = "visible";
 	RZ.Dialog.prototype.init.call(this, "Game over");
 	RZ.rz.lock();
 	
@@ -199,6 +198,6 @@ RZ.Dialog.GameOver.prototype._build = function() {
 	again.appendChild(btn);
 	OZ.Event.add(btn, "click", function() { location.reload(); });
 	
-	OZ.DOM.append([this._content, p, OZ.DOM.elm("hr"), this._share, OZ.DOM.elm("hr"), again]);
+	OZ.DOM.append([this._content, p, OZ.DOM.elm("hr"), OZ.$("share"), OZ.DOM.elm("hr"), again]);
 	btn.focus();
 }
