@@ -174,7 +174,7 @@ RZ.Dialog.Welcome.prototype._build = function() {
 
 RZ.Dialog.Welcome.prototype._keyPress = function(e) {
 	this._close();
-	RZ.Sound.start();
+	RZ.rz.start();
 }
 
 /**

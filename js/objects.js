@@ -28,7 +28,7 @@ RZ.Player.prototype.init = function(status) {
 	this.visual = {ch:"@"};
 	this.hp = 3;
 	this._status = status;
-	this._$ = 0;
+	this._$ = 100;
 	this.items = [new RZ.Item.Crowbar()];
 	this._updateVisual();
 	this.adjustMoney(10);
@@ -60,7 +60,7 @@ RZ.Zombie = OZ.Class().extend(RZ.Object);
 
 RZ.Zombie.prototype.init = function() {
 	RZ.Object.prototype.init.call(this);
-	this._manhattan = true; /* use manhattan movement mode? */
+	this._manhattan = false; /* use manhattan movement mode? */
 	var color = ["DarkOliveGreen", "LightSlateGray", "Olive", "OliveDrab", "SaddleBrown", "GoldenRod", "DarkSeaGreen"].random();
 	var ch = ["z", "Z"].random();
 	this.visual = {fg:color, ch:ch};
@@ -230,13 +230,12 @@ RZ.Item.prototype._explosionStep = function(coords, fx, fraction) {
 }
 
 /**
- * House - undestructible decoration
+ * House - blocking decoration
  */
 RZ.Item.House = OZ.Class().extend(RZ.Item);
 RZ.Item.House.prototype.init = function(ch) {
 	RZ.Item.prototype.init.call(this);
 	this.visual = {ch:ch,fg:"#930"};
-	this.hp = 2;
 	this.blocks = 2;
 }
 
@@ -244,9 +243,9 @@ RZ.Item.House.prototype.init = function(ch) {
  * Window - destructible decoration
  */
 RZ.Item.Window = OZ.Class().extend(RZ.Item);
-RZ.Item.Window.prototype.init = function(horiz) {
+RZ.Item.Window.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
-	this.visual = {ch:horiz ? "═" : "║",fg:"#39f"};
+	this.visual = {ch:"#", fg:"#39f"};
 	this.blocks = 1;
 }
 
@@ -270,6 +269,8 @@ RZ.Item.Crowbar.prototype.use = function(dir) {
 		RZ.rz.removeBackground(x, y);
 		return; 
 	} 
+
+	if (being) { RZ.Sound.playEffect("crowbar"); }
 	(being || item).damage(RZ.rz.player); /* crowbar can destroy even non-destructible items */
 }
 
@@ -279,7 +280,7 @@ RZ.Item.Crowbar.prototype.use = function(dir) {
 RZ.Item.Barricade = OZ.Class().extend(RZ.Item);
 RZ.Item.Barricade.prototype.init = function() {
 	RZ.Item.prototype.init.call(this);
-	this.hp = 5;
+	this.hp = 3;
 	this.blocks = 1;
 	this.visual = {ch:"#"};
 	this._updateVisual();
@@ -295,15 +296,18 @@ RZ.Item.Barricade.prototype.use = function(dir) {
 		var d = DIRS[(dir+offset+8) % 8];
 		var x = RZ.rz.player.x + d[0];
 		var y = RZ.rz.player.y + d[1];
-		var item = RZ.rz.getItem(x, y);
-		if (item) { continue; } /* there is already an item */
+		if (RZ.rz.getItem(x, y) || RZ.rz.getBeing(x, y)) { continue; } /* there is already an item or being */
 		RZ.rz.addItem(this.clone(), x, y);
 		RZ.Item.prototype.use.call(this, dir);
 		if (!this.amount) { break; }
 	}
 }
+RZ.Item.Barricade.prototype._die = function() {
+	RZ.Sound.playEffect("barricade");
+	RZ.Item.prototype._die.call(this);
+}
 RZ.Item.Barricade.prototype._updateVisual = function() {
-	var colors = ["", "#300", "#520", "#850", "#a70", "#c90"];
+	var colors = ["", "#300", "#850", "#c90"];
 	this.visual.fg = colors[this.hp];
 }
 
@@ -335,6 +339,7 @@ RZ.Item.Rake.prototype.use = function(dir) {
 	}
 }
 RZ.Item.Rake.prototype.activate = function(being) {
+	RZ.Sound.playEffect("rake");
 	being.damage(this);
 	this._die();
 }
@@ -351,6 +356,7 @@ RZ.Item.Mine.prototype.init = function(type, radius) {
 	this.type = type;
 	this.radius = radius;
 	this.name = type + " mine";
+	this.sound = "mine-" + type.toLowerCase();
 	var d = 2*radius + 1;
 	this.price = d;
 	this.desc = "destroys an area of "+d+"x"+d;
@@ -371,6 +377,7 @@ RZ.Item.Mine.prototype.use = function(dir) {
 	RZ.Item.prototype.use.call(this, dir);
 }
 RZ.Item.Mine.prototype.activate = function(being) {
+	RZ.Sound.playEffect(this.sound);
 	this._die();
 	this._explodeInRadius(this.x, this.y, this.radius);
 }
@@ -388,6 +395,8 @@ RZ.Item.Airstrike.prototype.init = function() {
 }
 RZ.Item.Airstrike.prototype.use = function(dir) {
 	RZ.Item.prototype.use.call(this, dir);
+	
+	RZ.Sound.playEffect("airstrike");
 
 	var coords = [];
 	
@@ -452,6 +461,7 @@ RZ.Item.Bazooka.prototype.use = function(dir) {
 		var being = RZ.rz.getBeing(x, y);
 		var item = RZ.rz.getItem(x, y);
 		if (being || (item && item.blocks > 0)) {
+			RZ.Sound.playEffect("bazooka");
 			this._explodeInRadius(x, y, 2);
 			RZ.rz.unlock();
 		} else {
@@ -514,7 +524,8 @@ RZ.Item.Wire.prototype.use = function(dir) {
 	}
 }
 RZ.Item.Wire.prototype.damage = function(being) {
-	being.damage(this); /* kill the zombie */
+	RZ.Sound.playEffect("wire FIXME");
+	being.damage(this); /* kill the offender */
 	RZ.Item.prototype.damage.call(this, being); /* die normally */
 }
 
@@ -583,6 +594,7 @@ RZ.Item.Fence.prototype.use = function(dir) {
 	}
 }
 RZ.Item.Fence.prototype.activate = function(being) {
+	RZ.Sound.playEffect("fence");
 	being.damage(this); /* kill the zombie */
 	
 	this.damage(being); /* take some damage */	

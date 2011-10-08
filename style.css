@@ -18,7 +18,6 @@ canvas {
 }
 
 #status {
-	font-family: Inconsolata;
 	text-align: center;
 	color: white;
 	margin: 0px;
@@ -140,7 +139,7 @@ canvas {
 	position: fixed;
 	background-color: white;
 	opacity: 0.8;
-	border-radius: 0px 0px 0px 25px;
+	border-radius: 0px 0px 0px 30px;
 	
 	padding: 0.4em 1em;
 
@@ -169,5 +168,5 @@ canvas {
 	position: absolute;
 	left: 9px;
 	bottom: 5px;
-	font-family: arial, sans-serif;
+	font-size: 150%;
 }

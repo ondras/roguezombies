@@ -15,15 +15,20 @@
 	<body onload="new RZ()">
 		<div id="share">
 			<a href="https://twitter.com/share" class="twitter-share-button" data-count="horizontal">Tweet</a>
-			<g:plusone size="medium"></g:plusone><script>(function(d, s, id) {
-			  var js, fjs = d.getElementsByTagName(s)[0];
-			  if (d.getElementById(id)) {return;}
-			  js = d.createElement(s); js.id = id;
-			  js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
-			  fjs.parentNode.insertBefore(js, fjs);
-			}(document, 'script', 'facebook-jssdk'));</script><span class="fb-like" data-send="false" data-layout="button_count" data-show-faces="false"></span>
-			<script type="text/javascript" src="//platform.twitter.com/widgets.js"></script>
-			<script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+			<g:plusone size="medium"></g:plusone>
+			<span class="fb-like" data-send="false" data-layout="button_count" data-show-faces="false"></span>
+			
+			<script>
+				var scripts = [
+					"https://apis.google.com/js/plusone.js",
+					"https://connect.facebook.net/en_US/all.js#xfbml=1",
+					"https://platform.twitter.com/widgets.js"
+				];
+				while (scripts.length) {
+					var s = OZ.DOM.elm("script", {type:"text/javascript", src:scripts.shift()});
+					document.getElementsByTagName("head")[0].appendChild(s);
+				}
+			</script>
 		</div>
 	</body>
 </html>

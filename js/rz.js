@@ -34,21 +34,26 @@ RZ.prototype.init = function() {
 	this._currentItem = null;
 	this._lockedMethod = null;
 	
+	this._zombiePotential = 4;
+	this._rounds = 0;
+	this._score = 0; /* dead zombies */
+
 	this._canvas = new OZ.Canvas(this);
 	document.body.appendChild(this._canvas.getCanvas());
 
+	RZ.Sound.init();
+	new RZ.Dialog.Welcome();
+}
+
+RZ.prototype.start = function() {
 	this._initStatus();
 	this._canvas.sync();
 	this._initItems();
 
-	this._zombiePotential = 4;
-	this._rounds = 0;
-	this._score = 0; /* dead zombies */
 	this.player = new RZ.Player(this._status.$);
 	this.addBeing(this.player, Math.round(this._size[0]/2), Math.round(this._size[1]/2));
-	
-	RZ.Sound.init();
-	new RZ.Dialog.Welcome();
+
+	RZ.Sound.start();
 	this._turnPlayer();
 }
 
@@ -146,6 +151,7 @@ RZ.prototype._updateZombies = function() {
 }
 
 RZ.prototype._spawnZombies = function(amount) {
+	if (amount) { RZ.Sound.playEffect("zombie"); }
 	var corners = [
 		[0, 0],
 		[this._size[0]-1, 0],
@@ -362,7 +368,7 @@ RZ.prototype.draw = function(x, y) {
 
 RZ.prototype._initStatus = function() {
 	this._status = {
-		container: OZ.DOM.elm("pre", {id:"status"}),
+		container: OZ.DOM.elm("p", {id:"status"}),
 		$: OZ.DOM.elm("span", {className:"money"}),
 		zombies: OZ.DOM.elm("span", {className:"zombies", title:"Alive/Dead"}),
 		status: OZ.DOM.elm("span"),
@@ -376,17 +382,17 @@ RZ.prototype._initStatus = function() {
 
 RZ.prototype._initItems = function() {
 	var house = [
-		"╔══h══h══hh══h══h══╗",
-		"║                  ╵",
-		"║                   ",
-		"v                  ╷",
-		"║                  ║",
-		"v                  v",
-		"║                  ║",
-		"v                  ╵",
-		"║                   ",
-		"║                  ╷",
-		"╚══h══h═╴  ╶═h══h══╝"
+		"###w##w##ww##w##w###",
+		"#                  #",
+		"#                   ",
+		"w                  #",
+		"#                  #",
+		"w                  w",
+		"#                  #",
+		"w                  #",
+		"#                   ",
+		"#                  #",
+		"###w##w##  ##w##w###"
 	];
 	
 	var offset = [Math.round((this._size[0]-house[0].length)/2), Math.round((this._size[1]-house.length)/2)];
@@ -396,8 +402,8 @@ RZ.prototype._initItems = function() {
 			if (ch == " ") { continue; }
 			
 			var item = null;
-			if (ch == "h" || ch =="v") { /* window */
-				item = new RZ.Item.Window(ch == "h");
+			if (ch == "w") { /* window */
+				item = new RZ.Item.Window();
 			} else {
 				item = new RZ.Item.House(ch);
 			}

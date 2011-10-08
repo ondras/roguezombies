@@ -22,6 +22,14 @@ RZ.Sound = {
 		}
 		
 	],
+	_effects: {
+		airstrike:		{ priority: 2, count: 1 },
+		bazooka: 		{ priority: 2, count: 1 },
+		crowbar: 		{ priority: 2, count: 2 },
+		"mine-large": 	{ priority: 2, count: 1 },
+		"mine-small": 	{ priority: 2, count: 1 },
+		zombie: 		{ priority: 0, count: 6 }
+	},
 	
 	init: function() {
 		if (!this.supported) { return; }
@@ -31,12 +39,31 @@ RZ.Sound = {
 		this._bg = new Audio();
 		this._ext = (this._bg.canPlayType("audio/ogg") ? "ogg" : "mp3");
 		OZ.Event.add(this._bg, "ended", this._next.bind(this));
+
+		for (var name in this._effects) {
+			var data = this._effects[name];
+			data.audio = [];
+			for (var i=0;i<data.count;i++) {
+				var n = name;
+				if (data.count > 1) { n += i; }
+				var a = new Audio(this._expandName(n));
+				a.load();
+				data.audio.push(a);
+			}
+		}
 	},
 	
 	start: function() {
 		if (!this.supported) { return; }
 		document.body.appendChild(this._dom.container);
 		this._playBackground(); 
+	},
+	
+	playEffect: function(name) {
+		if (!this.supported) { return; }
+		var data = this._effects[name];
+		if (!data) { return; }
+		data.audio.random().play();
 	},
 
 	_expandName: function(name) {
@@ -83,7 +110,7 @@ RZ.Sound = {
 		OZ.DOM.append(
 			[
 				this._dom.container, OZ.DOM.elm("span", {innerHTML:"Currently playing: "}), 
-				this._dom.title, this._dom.controls, OZ.DOM.elm("span", {id:"note", innerHTML:"♪"})
+				this._dom.title, this._dom.controls, OZ.DOM.elm("span", {id:"note", innerHTML:"♫"})
 			],
 			[this._dom.controls, prev, pause, next]
 		);
@@ -95,7 +122,7 @@ RZ.Sound = {
 	},
 	
 	_hide: function() {
-		var radius = 25;
+		var radius = 30;
 		var width = this._dom.container.offsetWidth - radius;
 		var height = this._dom.container.offsetHeight - radius;
 		this._dom.container.style.right = (-width) + "px";
