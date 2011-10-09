@@ -71,6 +71,15 @@ canvas {
 	vertical-align: top; 
 }
 
+#dialog #copyright {
+	font-size: 70%;
+	margin-top: 3em;
+}
+
+#dialog #copyright a {
+	color: gold;
+}
+
 #dialog h2 {
 	margin: 0px 0px 5px 0px;
 	text-align: center;

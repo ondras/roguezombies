@@ -524,7 +524,7 @@ RZ.Item.Wire.prototype.use = function(dir) {
 	}
 }
 RZ.Item.Wire.prototype.damage = function(being) {
-	RZ.Sound.playEffect("wire FIXME");
+	RZ.Sound.playEffect("wire");
 	being.damage(this); /* kill the offender */
 	RZ.Item.prototype.damage.call(this, being); /* die normally */
 }

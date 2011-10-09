@@ -200,6 +200,9 @@ RZ.Dialog.GameOver.prototype._build = function() {
 	again.appendChild(btn);
 	OZ.Event.add(btn, "click", function() { location.reload(); });
 	
-	OZ.DOM.append([this._content, p, OZ.DOM.elm("hr"), OZ.$("share"), OZ.DOM.elm("hr"), again]);
+	var copy = OZ.DOM.elm("p", {id:"copyright"});
+	copy.innerHTML = "&copy; 2011 <a href='http://ondras.zarovi.cz/'>Ondřej Žára</a> (<a href='http://code.google.com/p/roguezombies/'>project page</a>)";
+	
+	OZ.DOM.append([this._content, p, OZ.DOM.elm("hr"), OZ.$("share"), OZ.DOM.elm("hr"), again, copy]);
 	btn.focus();
 }

@@ -23,12 +23,16 @@ RZ.Sound = {
 		
 	],
 	_effects: {
-		airstrike:		{ priority: 2, count: 1 },
-		bazooka: 		{ priority: 2, count: 1 },
-		crowbar: 		{ priority: 2, count: 2 },
-		"mine-large": 	{ priority: 2, count: 1 },
-		"mine-small": 	{ priority: 2, count: 1 },
-		zombie: 		{ priority: 0, count: 6 }
+		airstrike:		{ count: 1 },
+		barricade:		{ count: 2 },
+		bazooka: 		{ count: 1 },
+		crowbar: 		{ count: 3 },
+		fence: 			{ count: 3 },
+		rake: 			{ count: 2 },
+		"mine-large": 	{ count: 1 },
+		"mine-small": 	{ count: 1 },
+		wire: 			{ count: 2 },
+		zombie: 		{ count: 9 }
 	},
 	
 	init: function() {
