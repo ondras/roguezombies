@@ -18,6 +18,7 @@ Array.prototype.random = function() {
 
 RZ.prototype.init = function() {
 	RZ.rz = this;
+	this.version = "1.0";
 	this._lock = 0;
 	this._size = [80, 25];
 	this._grass = new RZ.Object();

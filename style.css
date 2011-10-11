@@ -86,6 +86,11 @@ canvas {
 	text-align: center;
 }
 
+#dialog #version {
+	font-size: 50%;
+	opacity: 0.5;
+}
+
 #dialog table {
 	width: 100%;
 	border-collapse: collapse;

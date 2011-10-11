@@ -125,7 +125,7 @@ RZ.Dialog.Items.prototype._keyDown = function(e) {
 RZ.Dialog.Items.prototype._click = function(e) {
 	var t = OZ.Event.target(e);
 	if (t.nodeName.toLowerCase() != "input") { return; }
-	var code = t.value.charCodeAt(0);
+	var code = (t.value.match(/esc/i) ? 27 : t.value.charCodeAt(0));
 	this._processCode(code);
 }
 
@@ -153,7 +153,7 @@ RZ.Dialog.Items.prototype._processCode = function(code) {
  */
 RZ.Dialog.Welcome = OZ.Class().extend(RZ.Dialog);
 RZ.Dialog.Welcome.prototype.init = function() {
-	RZ.Dialog.prototype.init.call(this, "Welcome to Rogue Zombies!");
+	RZ.Dialog.prototype.init.call(this, "Welcome to Rogue Zombies! <span id='version'>(version " + RZ.rz.version + ")<span>");
 }
 RZ.Dialog.Welcome.prototype._build = function() {
 	OZ.DOM.addClass(this._container, "welcome");
