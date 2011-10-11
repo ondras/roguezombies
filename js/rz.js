@@ -34,7 +34,7 @@ RZ.prototype.init = function() {
 	this._currentItem = null;
 	this._lockedMethod = null;
 	
-	this._zombiePotential = 4;
+	this._zombiePotential = 1;
 	this._rounds = 0;
 	this._score = 0; /* dead zombies */
 
@@ -187,14 +187,14 @@ RZ.prototype._turnPlayer = function() {
 		return; 
 	}
 
-	this._rounds++;
-	var amount = this._rounds / 20;
+	var amount = Math.pow(this._rounds, 0.8) / 30;
 	this._zombiePotential += amount;
 	if (this._zombiePotential >= 1) {
 		amount = Math.floor(this._zombiePotential);
 		this._zombiePotential -= amount;
 		this._spawnZombies(amount);
 	}
+	this._rounds++;
 	
 	this._playerLoop();
 	this._turnZombies();

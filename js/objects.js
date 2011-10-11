@@ -28,10 +28,10 @@ RZ.Player.prototype.init = function(status) {
 	this.visual = {ch:"@"};
 	this.hp = 3;
 	this._status = status;
-	this._$ = 100;
+	this._$ = 0;
 	this.items = [new RZ.Item.Crowbar()];
 	this._updateVisual();
-	this.adjustMoney(10);
+	this.adjustMoney(3);
 }
 
 RZ.Player.prototype.adjustMoney = function(diff) {
