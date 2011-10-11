@@ -68,9 +68,11 @@ RZ.Zombie.prototype.init = function() {
 
 RZ.Zombie.prototype.act = function() {
 	var player = RZ.rz.player;
-	var best = [];
-	var bestBlocks = -1;
-	var bestDist = Infinity;
+	
+	var bestFree = [];
+	var bestNonFree = [];
+	var bestDistFree = this._distance(this.x, this.y, player.x, player.y); /* current distance */
+	var bestDistNonFree = bestDistFree;
 
 	var step = (this._manhattan ? 2 : 1);
 	for (var i=0;i<DIRS.length;i+=step) {
@@ -90,34 +92,35 @@ RZ.Zombie.prototype.act = function() {
 			continue;
 		}
 		
-		/* either a free space or a (destructible, [in]visible) item */
-		var blocks = (item ? item.blocks : 0);
 		
-		if (blocks == 1 && bestBlocks == 0) { continue; } /* worse blocking, not interested */
+		
+		/* either a free space or a (destructible, [in]visible) item */
+		
+		var free = (!item || item.blocks == 0);
 		var d = this._distance(x, y, player.x, player.y);
 
-		/** 
-		 * reset if:
-		 * a) better distance
-		 * b) same or worse distance, but better blocking
-		 */
-		if (d < bestDist || (blocks == 0 && bestBlocks == 1)) {
-			bestDist = d;
-			best = [];
+		if (free) { /* compare with other free positions */
+			if (d < bestDistFree) {
+				bestDistFree = d;
+				bestFree = [];
+			}
+			if (d == bestDistFree) { bestFree.push(i); }
+		} else { /* compare with other non-free positions */
+			if (d < bestDistNonFree) {
+				bestDistNonFree = d;
+				bestNonFree = [];
+			}
+			if (d == bestDistNonFree) { bestNonFree.push(i); }
 		}
-		
-		if (d == bestDist) {
-			best.push(i);
-			bestBlocks = blocks;
-		}
-
 	}
-	if (!best.length) { return; }
 	
-	var dir = best.random();
-	if (bestBlocks == 0) {
+	var arr = (bestFree.length ? bestFree : bestNonFree); /* pick the better resultset */
+	if (!arr.length) { return; }	
+	var dir = arr.random();
+	
+	if (arr == bestFree) { /* move */
 		RZ.rz.moveBeing(this, dir);
-	} else {
+	} else { /* attack */
 		var item = RZ.rz.getItem(this.x + DIRS[dir][0], this.y + DIRS[dir][1]);
 		item.damage(this);
 	}
