@@ -60,7 +60,7 @@ RZ.Sound = {
 	start: function() {
 		if (!this.supported) { return; }
 		document.body.appendChild(this._dom.container);
-		if (this._getEnabled()) {
+		if (this._getMusicEnabled()) {
 			this._playBackground(); 
 		} else {
 			this._hide();
@@ -69,23 +69,39 @@ RZ.Sound = {
 	
 	playEffect: function(name) {
 		if (!this.supported) { return; }
+		if (!this._getEffectsEnabled()) { return; }
 		var data = this._effects[name];
 		if (!data) { return; }
 		data.audio.random().play();
 	},
 	
-	_getEnabled: function() {
+	_getMusicEnabled: function() {
 		if (!window.localStorage) { return true; }
 		if (localStorage.getItem("music-disabled")) { return false; }
 		return true;
 	},
 	
-	_setEnabled: function(enabled) {
+	_setMusicEnabled: function(enabled) {
 		if (!window.localStorage) { return; }
 		if (enabled) {
 			localStorage.removeItem("music-disabled");
 		} else {
 			localStorage.setItem("music-disabled", "1");
+		}
+	},
+
+	_getEffectsEnabled: function() {
+		if (!window.localStorage) { return true; }
+		if (localStorage.getItem("effects-disabled")) { return false; }
+		return true;
+	},
+	
+	_setEffectsEnabled: function(enabled) {
+		if (!window.localStorage) { return; }
+		if (enabled) {
+			localStorage.removeItem("effects-disabled");
+		} else {
+			localStorage.setItem("effects-disabled", "1");
 		}
 	},
 
@@ -96,10 +112,10 @@ RZ.Sound = {
 	_playpause: function() {
 		if (this._bg.paused) { 
 			this._bg.play(); 
-			this._setEnabled(true);
+			this._setMusicEnabled(true);
 		} else { 
 			this._bg.pause(); 
-			this._setEnabled(false);
+			this._setMusicEnabled(false);
 		}
 	},
 	
@@ -113,7 +129,12 @@ RZ.Sound = {
 		this._playBackground();
 	},
 	
+	_toggleEffects: function(e) {
+		this._setEffectsEnabled(OZ.Event.target(e).checked);
+	},
+	
 	_playBackground: function() {
+		this._setMusicEnabled(true);
 		if (!this._backgrounds.length) { return; }
 		var sound = this._backgrounds[0];
 		this._bg.src = this._expandName(sound.name);
@@ -129,9 +150,15 @@ RZ.Sound = {
 		var pause = OZ.DOM.elm("span", {title:"Pause/Play", innerHTML: "■"});
 		var next = OZ.DOM.elm("span", {title:"Play next", innerHTML: "▶"});
 		
+		var effects = OZ.DOM.elm("div", {innerHTML:"<label><input type='checkbox' />sound effects</label>"});
+		var input = effects.getElementsByTagName("input")[0];
+		input.checked = this._getEffectsEnabled();
+		
 		OZ.Event.add(prev, "click", this._prev.bind(this));
 		OZ.Event.add(next, "click", this._next.bind(this));
 		OZ.Event.add(pause, "click", this._playpause.bind(this));
+		
+		OZ.Event.add(input, "click", this._toggleEffects.bind(this));
 		
 		OZ.Event.add(this._dom.container, "mouseover", this._show.bind(this));
 		OZ.Event.add(this._dom.container, "mouseout", this._hide.bind(this));
@@ -139,7 +166,7 @@ RZ.Sound = {
 		OZ.DOM.append(
 			[
 				this._dom.container, OZ.DOM.elm("span", {innerHTML:"Currently playing: "}), 
-				this._dom.title, this._dom.controls, OZ.DOM.elm("span", {id:"note", innerHTML:"♫"})
+				this._dom.title, this._dom.controls, effects, OZ.DOM.elm("span", {id:"note", innerHTML:"♫"})
 			],
 			[this._dom.controls, prev, pause, next]
 		);
