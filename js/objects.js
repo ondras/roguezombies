@@ -31,7 +31,7 @@ RZ.Player.prototype.init = function(status) {
 	this._$ = 0;
 	this.items = [new RZ.Item.Crowbar()];
 	this._updateVisual();
-	this.adjustMoney(5);
+	this.adjustMoney(10);
 }
 
 RZ.Player.prototype.adjustMoney = function(diff) {
