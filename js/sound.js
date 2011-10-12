@@ -60,11 +60,13 @@ RZ.Sound = {
 	start: function() {
 		if (!this.supported) { return; }
 		document.body.appendChild(this._dom.container);
-		if (this._getMusicEnabled()) {
-			this._playBackground(); 
-		} else {
+		this._playBackground(); 
+		
+		if (!this._getMusicEnabled()) {
+			this._bg.pause();
 			this._hide();
 		}
+		this._syncpp();
 	},
 	
 	playEffect: function(name) {
@@ -110,23 +112,28 @@ RZ.Sound = {
 	},
 	
 	_playpause: function() {
-		if (this._bg.paused) { 
+		if (this._bg.paused) {
 			this._bg.play(); 
 			this._setMusicEnabled(true);
 		} else { 
 			this._bg.pause(); 
 			this._setMusicEnabled(false);
 		}
+		this._syncpp();
 	},
 	
 	_next: function() {
 		this._backgrounds.push(this._backgrounds.shift());
 		this._playBackground();
+		this._setMusicEnabled(true);
+		this._syncpp();
 	},
 	
 	_prev: function() {
 		this._backgrounds.unshift(this._backgrounds.pop());
 		this._playBackground();
+		this._setMusicEnabled(true);
+		this._syncpp();
 	},
 	
 	_toggleEffects: function(e) {
@@ -134,7 +141,6 @@ RZ.Sound = {
 	},
 	
 	_playBackground: function() {
-		this._setMusicEnabled(true);
 		if (!this._backgrounds.length) { return; }
 		var sound = this._backgrounds[0];
 		this._bg.src = this._expandName(sound.name);
@@ -145,10 +151,15 @@ RZ.Sound = {
 		setTimeout(this._hide.bind(this), 2000);
 	},
 	
+	_syncpp: function() {
+		this._dom.pp.innerHTML = (this._bg.paused ? "▶" : "■");
+	},
+	
 	_build: function() {
-		var prev = OZ.DOM.elm("span", {title:"Play previous", innerHTML: "◀"});
-		var pause = OZ.DOM.elm("span", {title:"Pause/Play", innerHTML: "■"});
-		var next = OZ.DOM.elm("span", {title:"Play next", innerHTML: "▶"});
+		var prev = OZ.DOM.elm("span", {title:"Play previous", innerHTML: "◀◀"});
+		var pause = OZ.DOM.elm("span", {title:"Pause/Play"});
+		var next = OZ.DOM.elm("span", {title:"Play next", innerHTML: "▶▶"});
+		this._dom.pp = pause;
 		
 		var effects = OZ.DOM.elm("div", {innerHTML:"<label><input type='checkbox' />sound effects</label>"});
 		var input = effects.getElementsByTagName("input")[0];
