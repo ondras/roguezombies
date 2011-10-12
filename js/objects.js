@@ -246,9 +246,9 @@ RZ.Item.House.prototype.init = function(ch) {
  * Window - destructible decoration
  */
 RZ.Item.Window = OZ.Class().extend(RZ.Item);
-RZ.Item.Window.prototype.init = function() {
+RZ.Item.Window.prototype.init = function(horiz) {
 	RZ.Item.prototype.init.call(this);
-	this.visual = {ch:"#", fg:"#39f"};
+	this.visual = {ch:(horiz?"=":"|"), fg:"#39f"};
 	this.blocks = 1;
 }
 

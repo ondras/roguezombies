@@ -4,7 +4,7 @@ RZ.Sound = {
 	_bg: null,
 	_dom: {
 		container: OZ.DOM.elm("div", {id:"audio"}),
-		title: OZ.DOM.elm("strong"),
+		title: OZ.DOM.elm("strong", {innerHTML:"n/a"}),
 		controls: OZ.DOM.elm("div", {id:"controls"})
 	},
 	_backgrounds: [
@@ -60,7 +60,11 @@ RZ.Sound = {
 	start: function() {
 		if (!this.supported) { return; }
 		document.body.appendChild(this._dom.container);
-		this._playBackground(); 
+		if (this._getEnabled()) {
+			this._playBackground(); 
+		} else {
+			this._hide();
+		}
 	},
 	
 	playEffect: function(name) {
@@ -69,13 +73,34 @@ RZ.Sound = {
 		if (!data) { return; }
 		data.audio.random().play();
 	},
+	
+	_getEnabled: function() {
+		if (!window.localStorage) { return true; }
+		if (localStorage.getItem("music-disabled")) { return false; }
+		return true;
+	},
+	
+	_setEnabled: function(enabled) {
+		if (!window.localStorage) { return; }
+		if (enabled) {
+			localStorage.removeItem("music-disabled");
+		} else {
+			localStorage.setItem("music-disabled", "1");
+		}
+	},
 
 	_expandName: function(name) {
 		return "sfx/" + name  + "." + this._ext;
 	},
 	
 	_playpause: function() {
-		if (this._bg.paused) { this._bg.play(); } else { this._bg.pause(); }
+		if (this._bg.paused) { 
+			this._bg.play(); 
+			this._setEnabled(true);
+		} else { 
+			this._bg.pause(); 
+			this._setEnabled(false);
+		}
 	},
 	
 	_next: function() {

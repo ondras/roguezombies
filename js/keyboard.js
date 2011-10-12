@@ -2,7 +2,6 @@ RZ.Keyboard = {
 	_listener: null,
 	
 	_keyDown: function(e) {
-		console.log(e.keyCode);
 		if (this._listener) { this._listener[1](e); }
 	},
 	
@@ -40,6 +39,7 @@ RZ.Keyboard = {
 		def["2".charCodeAt(0)] = 4;
 		
 		def[97] = 5;
+		def["Y".charCodeAt(0)] = 5;
 		def["Z".charCodeAt(0)] = 5;
 		def["1".charCodeAt(0)] = 5;
 

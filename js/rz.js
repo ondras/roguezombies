@@ -383,17 +383,17 @@ RZ.prototype._initStatus = function() {
 
 RZ.prototype._initItems = function() {
 	var house = [
-		"###w##w##ww##w##w###",
-		"#                  #",
-		"#                   ",
-		"w                  #",
-		"#                  #",
-		"w                  w",
-		"#                  #",
-		"w                  #",
-		"#                   ",
-		"#                  #",
-		"###w##w##  ##w##w###"
+		"+==h==h==hh==h==h==+",
+		"|                  |",
+		"|                   ",
+		"v                  |",
+		"|                  |",
+		"v                  v",
+		"|                  |",
+		"v                  |",
+		"|                   ",
+		"|                  |",
+		"+==h==h==  ==h==h==+"
 	];
 	
 	var offset = [Math.round((this._size[0]-house[0].length)/2), Math.round((this._size[1]-house.length)/2)];
@@ -403,8 +403,8 @@ RZ.prototype._initItems = function() {
 			if (ch == " ") { continue; }
 			
 			var item = null;
-			if (ch == "w") { /* window */
-				item = new RZ.Item.Window();
+			if (ch == "h" || ch == "v") { /* window */
+				item = new RZ.Item.Window(ch == "h");
 			} else {
 				item = new RZ.Item.House(ch);
 			}
